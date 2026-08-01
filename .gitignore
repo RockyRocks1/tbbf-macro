@@ -1,0 +1,5 @@
+bin/
+out/
+.vs/
+.vscode/
+CMakeSettings.json
