@@ -43,9 +43,10 @@ if(NOT wil_POPULATED)
     FetchContent_Populate(wil)
 endif()
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/pixel/GdiPixelCapture.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include
+    include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
