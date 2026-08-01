@@ -31,11 +31,7 @@ bool GdiPixelCapture::CaptureRegion(int x, int y, int width, int height) {
 		captureBoundaries.right = captureBoundaries.left + GetSystemMetrics(SM_CXVIRTUALSCREEN);
 		captureBoundaries.bottom = captureBoundaries.top + GetSystemMetrics(SM_CYVIRTUALSCREEN);
 	}
-	if (x + width > captureBoundaries.right || y + height > captureBoundaries.bottom)
-		return false;
-
-	wil::unique_hdc_window hdcScreen = wil::GetDC(m_targetHwnd);
-	if (!hdcScreen) 
+	if (x < captureBoundaries.left || y < captureBoundaries.top || (x + width) > captureBoundaries.right || (y + height) > captureBoundaries.bottom)
 		return false;
 
 	if (m_width != width || m_height != height || !m_hBitmap) {
@@ -54,8 +50,15 @@ bool GdiPixelCapture::CaptureRegion(int x, int y, int width, int height) {
 		));
 		if (!m_hBitmap || !m_pBuffer) 
 			return false;
-		SelectObject(m_hdcMemory.get(), m_hBitmap.get());
+
+		HBITMAP hOld = static_cast<HBITMAP>(SelectObject(m_hdcMemory.get(), m_hBitmap.get()));
+		if (!m_hOldBitmap)
+			m_hOldBitmap = hOld;
 	}
+
+	wil::unique_hdc_window hdcScreen = wil::GetDC(m_targetHwnd);
+	if (!hdcScreen)
+		return false;
 
 	if (!BitBlt(m_hdcMemory.get(), 0, 0, width, height, hdcScreen.get(), x, y, SRCCOPY))
 		return false;
@@ -86,4 +89,12 @@ int GdiPixelCapture::GetWidth() const {
 }
 int GdiPixelCapture::GetHeight() const {
 	return m_height;
+}
+GdiPixelCapture::~GdiPixelCapture() {
+	if (m_hdcMemory && m_hOldBitmap) {
+		SelectObject(m_hdcMemory.get(), m_hOldBitmap);
+		m_hOldBitmap = nullptr;
+	}
+	m_hBitmap.reset();
+	m_hdcMemory.reset();
 }
