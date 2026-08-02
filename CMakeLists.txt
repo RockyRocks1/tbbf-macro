@@ -43,13 +43,37 @@ if(NOT wil_POPULATED)
     FetchContent_Populate(wil)
 endif()
 
+# curl Dependency
+set(HTTP_ONLY ON CACHE INTERNAL "")
+set(CURL_USE_SCHANNEL ON CACHE INTERNAL "")
+set(CURL_USE_LIBPSL OFF CACHE INTERNAL "") 
+set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+set(BUILD_TESTING OFF CACHE INTERNAL "")
+set(BUILD_CURL_EXE OFF CACHE INTERNAL "")
+
+FetchContent_Declare(
+    curl
+    GIT_REPOSITORY https://github.com/curl/curl.git
+    GIT_TAG        curl-8_21_0
+)
+FetchContent_MakeAvailable(curl)
+
+# nlohmann json Dependency
+FetchContent_Declare(
+    json
+    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+)
+FetchContent_MakeAvailable(json)
+
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/pixel/GdiPixelCapture.cpp 
     src/pixel/WGCPixelCapture.cpp
+    src/http/HttpClient.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include
+    ${CURL_INCLUDE_DIRS}
     include
 )
 
@@ -59,4 +83,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     dxgi
     dwmapi
     runtimeobject
+    libcurl
+    nlohmann_json::nlohmann_json
 )
