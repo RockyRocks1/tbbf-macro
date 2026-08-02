@@ -2,7 +2,7 @@
 
 HttpClient::HttpClient(): m_curl(curl_easy_init(), curl_easy_cleanup), m_headerList(nullptr, curl_slist_free_all) {}
 
-void HttpClient::getCookieString(std::string& outCookieString) const {
+void HttpClient::GetCookieString(std::string& outCookieString) const {
 	outCookieString.clear();
 	for (const auto& [cookieName, cookieValue] : m_cookies)
 		outCookieString += std::format("{}={}; ", cookieName, cookieValue);
@@ -12,18 +12,41 @@ void HttpClient::getCookieString(std::string& outCookieString) const {
 		outCookieString.pop_back(); // removes ;
 	}
 }
+void HttpClient::FormatRawHeaders(std::string& rawHeader, HeaderMap& headerMap) {
+	std::istringstream headerStream(rawHeader);
+	std::string line;
+	while (std::getline(headerStream, line)) {
+		if (!line.empty() && line.back() == '\r')
+			line.pop_back();
+		
+		const size_t delimeterPos = line.find(":");
+		if (delimeterPos == std::string::npos)
+			continue;
+		
+		std::string headerName = line.substr(0, delimeterPos);
+		std::string headerValue = line.substr(delimeterPos + 1);
+		
+		const size_t whitespaceEndPos = headerValue.find_first_not_of(" \t");
 
-bool HttpClient::SetupRequest(const std::string& url, const StringMap& headers, Response& response) {
+		if (whitespaceEndPos != std::string::npos)
+			headerValue.erase(0, whitespaceEndPos);
+		headerMap[headerName] = headerValue;
+	}
+	
+}
+
+bool HttpClient::SetupRequest(const std::string& url, const StringMap& headers, HttpResponse& response) {
 	if (!m_curl)
 		return false;
 
 	curl_easy_reset(m_curl.get());
-	m_headerList.reset();
+
+	curl_easy_setopt(m_curl.get(), CURLOPT_HTTPGET, 1L); 
 
 	curl_easy_setopt(m_curl.get(), CURLOPT_DEFAULT_PROTOCOL, "https");
 	curl_easy_setopt(m_curl.get(), CURLOPT_URL, url.c_str());
 
-	getCookieString(m_cookieString);
+	GetCookieString(m_cookieString);
 	curl_easy_setopt(m_curl.get(), CURLOPT_COOKIE, m_cookieString.c_str());
 
 	curl_slist* rawHeaderList = nullptr;
@@ -41,22 +64,25 @@ bool HttpClient::SetupRequest(const std::string& url, const StringMap& headers, 
 	curl_easy_setopt(m_curl.get(), CURLOPT_WRITEDATA, &response.body);
 
 	curl_easy_setopt(m_curl.get(), CURLOPT_HEADERFUNCTION, HttpClient::SharedCallback);
-	curl_easy_setopt(m_curl.get(), CURLOPT_HEADERDATA, &response.headers);
+	curl_easy_setopt(m_curl.get(), CURLOPT_HEADERDATA, &response.rawHeaders);
 	
 	return true;
 }
-Response HttpClient::get(const std::string& url, const StringMap& headers) {
-	Response response;
+HttpResponse HttpClient::get(const std::string& url, const StringMap& headers) {
+	HttpResponse response;
 	if (!SetupRequest(url, headers, response)) {
 		response.code = CURLE_FAILED_INIT;
 		return response;
 	}
 
 	response.code = curl_easy_perform(m_curl.get());
+	if (response.code == CURLE_OK)
+		curl_easy_getinfo(m_curl.get(), CURLINFO_RESPONSE_CODE, &response.statusCode);
+	FormatRawHeaders(response.rawHeaders, response.headers);
 	return response;
 }
-Response HttpClient::post(const std::string& url, const std::string& body, const StringMap& headers) {
-	Response response;
+HttpResponse HttpClient::post(const std::string& url, const std::string& body, const StringMap& headers) {
+	HttpResponse response;
 	if (!SetupRequest(url, headers, response)) {
 		response.code = CURLE_FAILED_INIT;
 		return response;
@@ -66,6 +92,9 @@ Response HttpClient::post(const std::string& url, const std::string& body, const
 	curl_easy_setopt(m_curl.get(), CURLOPT_POSTFIELDSIZE, static_cast<long>(body.size()));
 	
 	response.code = curl_easy_perform(m_curl.get());
+	if (response.code == CURLE_OK)
+		curl_easy_getinfo(m_curl.get(), CURLINFO_RESPONSE_CODE, &response.statusCode);
+	FormatRawHeaders(response.rawHeaders, response.headers);
 	return response;
 }
 size_t HttpClient::SharedCallback(char* ptr, size_t size, size_t nmemb, void* userdata) {
@@ -74,3 +103,4 @@ size_t HttpClient::SharedCallback(char* ptr, size_t size, size_t nmemb, void* us
 	response_body->append(ptr, totalSize);
 	return totalSize;
 }
+

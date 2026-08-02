@@ -3,8 +3,7 @@
 #include <http/HttpClient.h>
 #include <iostream>
 #include <thread>
-#include <curl/curl.h>
-#include <nlohmann/json.hpp>
+#include <roblox/RobloxWeb.h>
 using json = nlohmann::json;
 /*
 HWND hwnd = FindWindowW(NULL, L"Roblox");
@@ -24,11 +23,11 @@ HWND hwnd = FindWindowW(NULL, L"Roblox");
 int main() {
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	{
-		HttpClient client;
-		Response res = client.get("https://httpbun.com/");
-		std::cout << "Got curl code:  " << res.code << std::endl;
-		std::cout << res.headers << std::endl;
-		std::cout << res.body << std::endl;
+		RobloxWeb web("...");
+		WebToken a = web.GetAuthenticationTicket();
+		if (a.has_value())
+			std::cout << a.value();
+		std::cout <<  web.GetUserInformation().value().name;
 	}
 	curl_global_cleanup();
 }
