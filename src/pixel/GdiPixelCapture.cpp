@@ -80,16 +80,6 @@ ColorRGBA GdiPixelCapture::GetPixel(int relX, int relY) const {
 	return ColorRGBA{ pixel.r, pixel.g, pixel.b, pixel.a};
 }
 
-const uint8_t* GdiPixelCapture::GetBuffer() const {
-	return static_cast<const uint8_t*>(m_pBuffer);
-}
-
-int GdiPixelCapture::GetWidth() const {
-	return m_width;
-}
-int GdiPixelCapture::GetHeight() const {
-	return m_height;
-}
 GdiPixelCapture::~GdiPixelCapture() {
 	if (m_hdcMemory && m_hOldBitmap) {
 		SelectObject(m_hdcMemory.get(), m_hOldBitmap);

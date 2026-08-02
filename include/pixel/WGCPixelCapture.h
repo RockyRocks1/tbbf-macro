@@ -44,7 +44,13 @@ public:
 	bool CaptureRegion(int x, int y, int width, int height) override;
 
 	ColorRGBA GetPixel(int relX, int relY) const override;
-	const uint8_t* GetBuffer() const override;
-	int GetWidth() const override;
-	int GetHeight() const override;
+	inline const uint8_t* GetBuffer() const override {
+		return static_cast<const uint8_t*>(m_pBuffer);
+	};
+	inline int GetWidth() const override {
+		return m_width;
+	};
+	inline int GetHeight() const override {
+		return m_height;
+	};
 };

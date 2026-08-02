@@ -195,16 +195,7 @@ ColorRGBA WGCPixelCapture::GetPixel(int relX, int relY) const {
 	return ColorRGBA{ pixel.r, pixel.g, pixel.b, pixel.a };
 }
 
-const uint8_t* WGCPixelCapture::GetBuffer() const {
-	return static_cast<const uint8_t*>(m_pBuffer);
-}
 
-int WGCPixelCapture::GetWidth() const {
-	return m_width;
-}
-int WGCPixelCapture::GetHeight() const {
-	return m_height;
-}
 WGCPixelCapture::~WGCPixelCapture() {
 	if (m_pBuffer)
 	{
