@@ -16,7 +16,7 @@ private:
 	int m_height = 0;
 public:
 	GdiPixelCapture() = default;
-	~GdiPixelCapture() = default; // ?
+	~GdiPixelCapture() override; // ?
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
 	bool CaptureRegion(int x, int y, int width, int height) override;
