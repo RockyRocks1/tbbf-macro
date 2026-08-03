@@ -71,6 +71,7 @@ add_executable(${PROJECT_NAME}
     src/pixel/WGCPixelCapture.cpp
     src/http/HttpClient.cpp
     src/roblox/RobloxWeb.cpp
+    src/roblox/RobloxLauncher.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include

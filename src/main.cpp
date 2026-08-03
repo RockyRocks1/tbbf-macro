@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 #include <roblox/RobloxWeb.h>
+#include <roblox/RobloxLauncher.h>
 using json = nlohmann::json;
 /*
 HWND hwnd = FindWindowW(NULL, L"Roblox");
@@ -23,11 +24,15 @@ HWND hwnd = FindWindowW(NULL, L"Roblox");
 int main() {
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	{
+		//you gotta edit these values to get it working
+		HANDLE hMutex = CreateMutexW(NULL, TRUE, L"ROBLOX_singletonEvent"); // testing multi acc
 		RobloxWeb web("...");
-		WebToken a = web.GetAuthenticationTicket();
-		if (a.has_value())
-			std::cout << a.value();
-		std::cout <<  web.GetUserInformation().value().name;
+		std::string authTicket = web.GetAuthenticationTicket().value_or("");
+		uint64_t gameId = 1;
+        std::string gamePath = "C:\\Users\\...\\AppData\\Local\\Roblox\\Versions\\...\\RobloxPlayerBeta.exe";
+		RobloxLauncher launcher(gamePath);
+
+		launcher.JoinPrivateGame(gameId, "...", authTicket);
 	}
 	curl_global_cleanup();
 }
