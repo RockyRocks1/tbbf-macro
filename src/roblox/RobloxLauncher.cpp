@@ -1,24 +1,6 @@
 #include <roblox/RobloxLauncher.h>
 
-RobloxLauncher::RobloxLauncher(std::filesystem::path gamePath) : m_gamePath(gamePath) {}
-
-std::optional<DWORD> RobloxLauncher::MakeProcess(std::wstring& commandLine) {
-	if (!IsValidPath())
-		return std::nullopt;
-
-	STARTUPINFOW startupInfo{ sizeof(startupInfo) };
-	PROCESS_INFORMATION processInfo{};
-
-	if (!CreateProcessW(m_gamePath.c_str(), commandLine.data(), NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo))
-		return std::nullopt;
-
-	DWORD waitResult = WaitForSingleObject(processInfo.hProcess, 10000);
-	CloseHandle(processInfo.hProcess);
-	CloseHandle(processInfo.hThread);
-	if (waitResult == WAIT_TIMEOUT)
-		return processInfo.dwProcessId;
-	return std::nullopt;
-}
+RobloxLauncher::RobloxLauncher(std::filesystem::path gamePath) : m_gamePath(std::move(gamePath)) {}
 
 std::optional<DWORD> RobloxLauncher::JoinPublicGame(uint64_t gameId, const std::string& authTicket) {
 	std::wstring commandLine = std::format(
@@ -28,7 +10,7 @@ std::optional<DWORD> RobloxLauncher::JoinPublicGame(uint64_t gameId, const std::
 		std::to_wstring(gameId)
 	);
 
-	return MakeProcess(commandLine);
+	return ProcessUtils::MakeProcess(m_gamePath, commandLine, 10000);
 }
 
 std::optional<DWORD> RobloxLauncher::JoinPrivateGame(uint64_t gameId, const std::string& accessCode, const std::string& authTicket) {
@@ -40,5 +22,5 @@ std::optional<DWORD> RobloxLauncher::JoinPrivateGame(uint64_t gameId, const std:
 		std::to_wstring(gameId)
 	);
 
-	return MakeProcess(commandLine);
+	return ProcessUtils::MakeProcess(m_gamePath, commandLine, 10000);
 }

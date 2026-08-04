@@ -10,6 +10,7 @@
 #include <d3d11.h>
 #include <mutex>
 #include "IPixelCapture.h"
+#include <utils/WindowUtils.h>
 
 class WgcPixelCapture : public IPixelCapture {
 private:
@@ -35,7 +36,6 @@ private:
 
 	void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args);
 	bool EnsureStagingTexture(uint32_t width, uint32_t height);
-	Rect GetClientBounds() const override;
 public:
 	WgcPixelCapture() = default;
 	~WgcPixelCapture() override;
@@ -43,7 +43,6 @@ public:
 	bool Initialize(HWND targetHwnd = nullptr) override;
 	bool CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
 
-	ColorRgba GetPixel(uint32_t relX, uint32_t relY) const override;
 	inline FrameView GetFrameView() const noexcept override {
 		return {
 			.data = static_cast<const uint8_t*>(m_pBuffer),

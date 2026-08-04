@@ -114,9 +114,13 @@ bool WgcPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint
 	if (width <= 0 || height <= 0 || x < 0 || y < 0)
 		return false;
 
-	Rect clientBounds = GetClientBounds();
+	Rect clientBounds = WindowUtils::GetClientRectRelativeToWindow(m_targetHwnd);
 	const uint32_t clientX = static_cast<uint32_t>(clientBounds.x) + x;
 	const uint32_t clientY = static_cast<uint32_t>(clientBounds.y) + y;
+
+	if (clientX + width > static_cast<uint32_t>(clientBounds.width) ||
+		clientY + height > static_cast<uint32_t>(clientBounds.height)) // there could be an one-by-one runtime error here...
+		return false;
 
 	if (!m_context)
 		return false;
@@ -134,10 +138,6 @@ bool WgcPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint
 	const uint32_t frameWidth = sourceDesc.Width;
 	const uint32_t frameHeight = sourceDesc.Height;
 
-	if (clientX + width > static_cast<uint32_t>(clientBounds.width) ||
-		clientY + height > static_cast<uint32_t>(clientBounds.height)) {
-		return false;
-	}
 	
 	if (!EnsureStagingTexture(width, height))
 		return false;
@@ -185,45 +185,6 @@ bool WgcPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint
 
 	m_context->Unmap(m_stagingTexture.get(), 0);
 	return true;
-}
-
-ColorRgba WgcPixelCapture::GetPixel(uint32_t relX, uint32_t relY) const {
-	if (!m_pBuffer)
-		return ColorRgba{};
-	if (relX >= m_width || relY >= m_height || relX < 0 || relY < 0)
-		return ColorRgba{};
-
-	const size_t index = static_cast<size_t>(relY) * m_width + relX;
-	const ColorBgra* pixelBytes = static_cast<const ColorBgra*>(m_pBuffer);
-	const ColorBgra pixel = pixelBytes[index];
-
-	return ColorRgba{
-		.r = pixel.r,
-		.g = pixel.g,
-		.b = pixel.b,
-		.a = pixel.a
-	};
-}
-
-Rect WgcPixelCapture::GetClientBounds() const {
-	Rect bounds{};
-
-	if (!IsWindow(m_targetHwnd))
-		return bounds;
-
-	RECT rectWindow, rectClient;
-	GetWindowRect(m_targetHwnd, &rectWindow);
-	GetClientRect(m_targetHwnd, &rectClient);
-
-	POINT clientTopLeft{ 0, 0 };
-	ClientToScreen(m_targetHwnd, &clientTopLeft);
-
-	bounds.x = clientTopLeft.x - rectWindow.left;
-	bounds.y = clientTopLeft.y - rectWindow.top;
-	bounds.width = rectClient.right;
-	bounds.height = rectClient.bottom;
-
-	return bounds;
 }
 
 WgcPixelCapture::~WgcPixelCapture() {

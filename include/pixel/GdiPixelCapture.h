@@ -15,15 +15,12 @@ private:
 	void* m_pBuffer = nullptr;
 	uint32_t m_width = 0;
 	uint32_t m_height = 0;
-	Rect GetClientBounds() const override;
 public:
 	GdiPixelCapture() = default;
 	~GdiPixelCapture() override;
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
 	bool CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
-
-	ColorRgba GetPixel(uint32_t relX, uint32_t relY) const override;
 
 	inline FrameView GetFrameView() const noexcept {
 		return {

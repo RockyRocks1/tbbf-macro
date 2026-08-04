@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Windows.h>
+#include <utils/WindowUtils.h>
 #include <optional>
 #include <memory>
 #include <utility>
@@ -27,7 +27,7 @@ private:
 	RobloxGame(HWND hwnd);
 public:
     static std::optional<RobloxGame> FromHwnd(HWND hwnd, PixelCaptureMode captureMode = PixelCaptureMode::WGC);
-    static std::optional<RobloxGame> FromProcessId(DWORD processId, DWORD timeoutMs = 5000, PixelCaptureMode captureMode = PixelCaptureMode::WGC);
+    static std::optional<RobloxGame> FromProcessId(DWORD processId, PixelCaptureMode captureMode = PixelCaptureMode::WGC);
 
     void UpdateClientBounds();
     void SetFocus();

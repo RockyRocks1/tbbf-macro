@@ -68,46 +68,6 @@ bool GdiPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint
 	return true;
 }
 
-ColorRgba GdiPixelCapture::GetPixel(uint32_t relX, uint32_t relY) const {
-	if (!m_pBuffer)
-		return ColorRgba{};
-	if (relX >= m_width || relY >= m_height || relX < 0 || relY < 0)
-		return ColorRgba{};
-
-	const size_t index = static_cast<size_t>(relY) * m_width + relX;
-
-	const ColorBgra* pixelBytes = static_cast<const ColorBgra*>(m_pBuffer);
-	const ColorBgra pixel = pixelBytes[index];
-
-	return ColorRgba{ 
-		.r = pixel.r, 
-		.g = pixel.g, 
-		.b = pixel.b,
-		.a = pixel.a
-	};
-}
-
-Rect GdiPixelCapture::GetClientBounds() const {
-	Rect bounds{};
-
-	if (!IsWindow(m_targetHwnd))
-		return bounds;
-
-	RECT rectWindow, rectClient;
-	GetWindowRect(m_targetHwnd, &rectWindow);
-	GetClientRect(m_targetHwnd, &rectClient);
-
-	POINT clientTopLeft{ 0, 0 };
-	ClientToScreen(m_targetHwnd, &clientTopLeft);
-
-	bounds.x = clientTopLeft.x - rectWindow.left;
-	bounds.y = clientTopLeft.y - rectWindow.top;
-	bounds.width = rectClient.right;
-	bounds.height = rectClient.bottom;
-
-	return bounds;
-}
-
 GdiPixelCapture::~GdiPixelCapture() {
 	if (m_hdcMemory && m_hOldBitmap) {
 		SelectObject(m_hdcMemory.get(), m_hOldBitmap);
