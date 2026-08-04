@@ -10,7 +10,7 @@ private:
 	wil::unique_hbitmap m_hBitmap;
 	wil::unique_hdc m_hdcMemory;
 	BITMAPINFO m_bitmapInfo{};
-	HBITMAP m_hOldBitmap;
+	HBITMAP m_hOldBitmap{};
 
 	void* m_pBuffer = nullptr;
 	uint32_t m_width = 0;

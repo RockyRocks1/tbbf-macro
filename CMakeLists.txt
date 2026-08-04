@@ -76,6 +76,7 @@ add_executable(${PROJECT_NAME}
     src/roblox/RobloxGame.cpp
     src/ocr/OcrTool.cpp
     src/utils/WindowUtils.cpp
+    src/utils/ProcessUtils.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include

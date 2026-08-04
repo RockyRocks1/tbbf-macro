@@ -31,4 +31,6 @@ std::optional<RobloxGame> RobloxGame::FromProcessId(DWORD processId, PixelCaptur
 
 	return RobloxGame::FromHwnd(mainWindowHwnd, captureMode);
 }
+void RobloxGame::UpdateClientBounds() {
 
+}
