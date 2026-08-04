@@ -68,10 +68,13 @@ FetchContent_MakeAvailable(json)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/pixel/GdiPixelCapture.cpp 
-    src/pixel/WGCPixelCapture.cpp
+    src/pixel/WgcPixelCapture.cpp
+    src/pixel/PixelModifier.cpp
     src/http/HttpClient.cpp
     src/roblox/RobloxWeb.cpp
     src/roblox/RobloxLauncher.cpp
+    src/roblox/RobloxGame.cpp
+    src/ocr/OcrTool.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include
@@ -87,4 +90,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     runtimeobject
     libcurl
     nlohmann_json::nlohmann_json
+    windowsapp
 )

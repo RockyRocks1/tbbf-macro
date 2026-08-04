@@ -1,13 +1,6 @@
 #include <roblox/RobloxLauncher.h>
 
-struct WindowSearchData {
-	DWORD targetProcessId = 0;
-	HWND foundHwnd = nullptr;
-};
-
-
 RobloxLauncher::RobloxLauncher(std::filesystem::path gamePath) : m_gamePath(gamePath) {}
-
 
 std::optional<DWORD> RobloxLauncher::MakeProcess(std::wstring& commandLine) {
 	if (!IsValidPath())

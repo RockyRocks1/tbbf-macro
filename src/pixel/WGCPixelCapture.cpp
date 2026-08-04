@@ -1,6 +1,8 @@
-#include <pixel/WGCPixelCapture.h>
+#include <pixel/WgcPixelCapture.h>
 
-bool WGCPixelCapture::Initialize(HWND targetHwnd) {
+
+
+bool WgcPixelCapture::Initialize(HWND targetHwnd) {
 	m_targetHwnd = targetHwnd;
 	HRESULT result = D3D11CreateDevice(
 		nullptr,
@@ -46,7 +48,7 @@ bool WGCPixelCapture::Initialize(HWND targetHwnd) {
 	
 	if (!m_framePool)
 		return false;
-	m_frameArrivedToken = m_framePool.FrameArrived({ this, &WGCPixelCapture::OnFrameArrived });
+	m_frameArrivedToken = m_framePool.FrameArrived({ this, &WgcPixelCapture::OnFrameArrived });
 
 	m_captureSession = m_framePool.CreateCaptureSession(m_item);
 	if (!m_captureSession)
@@ -56,7 +58,7 @@ bool WGCPixelCapture::Initialize(HWND targetHwnd) {
 	m_captureSession.StartCapture();
 	return true;
 }
-void WGCPixelCapture::OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args) {
+void WgcPixelCapture::OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args) {
 	winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame = sender.TryGetNextFrame();
 	if (!frame)
 		return;
@@ -81,25 +83,25 @@ void WGCPixelCapture::OnFrameArrived(const winrt::Windows::Graphics::Capture::Di
 		m_currentSourceTexture = newSourceTexture;
 	}
 }
-bool WGCPixelCapture::EnsureStagingTexture(int width, int height)
+bool WgcPixelCapture::EnsureStagingTexture(uint32_t width, uint32_t height)
 {
 	if (m_stagingTexture)
 	{
 		D3D11_TEXTURE2D_DESC stagingDesc{};
 		m_stagingTexture->GetDesc(&stagingDesc);
-		if (stagingDesc.Width == static_cast<uint32_t>(width) && stagingDesc.Height == static_cast<uint32_t>(height))
+		if (stagingDesc.Width == width && stagingDesc.Height == height)
 			return true;
 	}
 
 	D3D11_TEXTURE2D_DESC desc{};
-	desc.Width = static_cast<uint32_t>(width);
-	desc.Height = static_cast<uint32_t>(height);
+	desc.Width = width;
+	desc.Height = height;
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
-	desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	desc.Format = DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM;
 	desc.SampleDesc.Count = 1;
-	desc.Usage = D3D11_USAGE_STAGING;
-	desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	desc.Usage = D3D11_USAGE::D3D11_USAGE_STAGING;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_READ;
 	desc.BindFlags = 0;
 	desc.MiscFlags = 0;
 
@@ -108,9 +110,14 @@ bool WGCPixelCapture::EnsureStagingTexture(int width, int height)
 	HRESULT result = m_device->CreateTexture2D(&desc, nullptr, m_stagingTexture.put());
 	return SUCCEEDED(result);
 }
-bool WGCPixelCapture::CaptureRegion(int x, int y, int width, int height) {
+bool WgcPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
 	if (width <= 0 || height <= 0 || x < 0 || y < 0)
 		return false;
+
+	Rect clientBounds = GetClientBounds();
+	const uint32_t clientX = static_cast<uint32_t>(clientBounds.x) + x;
+	const uint32_t clientY = static_cast<uint32_t>(clientBounds.y) + y;
+
 	if (!m_context)
 		return false;
 
@@ -127,19 +134,20 @@ bool WGCPixelCapture::CaptureRegion(int x, int y, int width, int height) {
 	const uint32_t frameWidth = sourceDesc.Width;
 	const uint32_t frameHeight = sourceDesc.Height;
 
-	if (static_cast<uint32_t>(x) >= frameWidth || static_cast<uint32_t>(y) >= frameHeight || static_cast<uint32_t>(x + width) > frameWidth || static_cast<uint32_t>(y + height) > frameHeight)
+	if (clientX + width > static_cast<uint32_t>(clientBounds.width) ||
+		clientY + height > static_cast<uint32_t>(clientBounds.height)) {
 		return false;
-	
+	}
 	
 	if (!EnsureStagingTexture(width, height))
 		return false;
 
 	D3D11_BOX box{};
-	box.left = static_cast<uint32_t>(x);
-	box.top = static_cast<uint32_t>(y);
+	box.left = clientX;
+	box.top = clientY;
 	box.front = 0;
-	box.right = std::min<uint32_t>(static_cast<uint32_t>(x + width), frameWidth);
-	box.bottom = std::min<uint32_t>(static_cast<uint32_t>(y + height), frameHeight);
+	box.right = clientX + width;
+	box.bottom = clientY + height;
 	box.back = 1;
 	m_context->CopySubresourceRegion(
 		m_stagingTexture.get(), 0,
@@ -149,15 +157,13 @@ bool WGCPixelCapture::CaptureRegion(int x, int y, int width, int height) {
 	);
 
 	D3D11_MAPPED_SUBRESOURCE mapped{};
-	HRESULT result = m_context->Map(m_stagingTexture.get(), 0, D3D11_MAP_READ, 0, &mapped);
+	HRESULT result = m_context->Map(m_stagingTexture.get(), 0, D3D11_MAP::D3D11_MAP_READ, 0, &mapped);
 	if (FAILED(result))
 		return false;
 	size_t requiredBytes = static_cast<size_t>(width) * height * 4;
-	if (requiredBytes > m_bufferCapacity)
-	{
+	if (requiredBytes > m_bufferCapacity) {
 		void* newBuffer = std::realloc(m_pBuffer, requiredBytes);
-		if (!newBuffer)
-		{
+		if (!newBuffer) {
 			m_context->Unmap(m_stagingTexture.get(), 0);
 			return false;
 		}
@@ -167,7 +173,6 @@ bool WGCPixelCapture::CaptureRegion(int x, int y, int width, int height) {
 
 	m_width = width;
 	m_height = height;
-
 	uint8_t* sourceBytes = static_cast<uint8_t*>(mapped.pData);
 	uint8_t* destBytes = static_cast<uint8_t*>(m_pBuffer);
 
@@ -182,21 +187,46 @@ bool WGCPixelCapture::CaptureRegion(int x, int y, int width, int height) {
 	return true;
 }
 
-ColorRGBA WGCPixelCapture::GetPixel(int relX, int relY) const {
+ColorRgba WgcPixelCapture::GetPixel(uint32_t relX, uint32_t relY) const {
 	if (!m_pBuffer)
-		return ColorRGBA{ 0, 0, 0, 0 };
+		return ColorRgba{};
 	if (relX >= m_width || relY >= m_height || relX < 0 || relY < 0)
-		return ColorRGBA{ 0, 0, 0, 0 };
+		return ColorRgba{};
 
-	const size_t index = static_cast<size_t>(relY * m_width + relX);
-	const ColorBGRA* pixelBytes = static_cast<const ColorBGRA*>(m_pBuffer);
-	const ColorBGRA pixel = pixelBytes[index];
+	const size_t index = static_cast<size_t>(relY) * m_width + relX;
+	const ColorBgra* pixelBytes = static_cast<const ColorBgra*>(m_pBuffer);
+	const ColorBgra pixel = pixelBytes[index];
 
-	return ColorRGBA{ pixel.r, pixel.g, pixel.b, pixel.a };
+	return ColorRgba{
+		.r = pixel.r,
+		.g = pixel.g,
+		.b = pixel.b,
+		.a = pixel.a
+	};
 }
 
+Rect WgcPixelCapture::GetClientBounds() const {
+	Rect bounds{};
 
-WGCPixelCapture::~WGCPixelCapture() {
+	if (!IsWindow(m_targetHwnd))
+		return bounds;
+
+	RECT rectWindow, rectClient;
+	GetWindowRect(m_targetHwnd, &rectWindow);
+	GetClientRect(m_targetHwnd, &rectClient);
+
+	POINT clientTopLeft{ 0, 0 };
+	ClientToScreen(m_targetHwnd, &clientTopLeft);
+
+	bounds.x = clientTopLeft.x - rectWindow.left;
+	bounds.y = clientTopLeft.y - rectWindow.top;
+	bounds.width = rectClient.right;
+	bounds.height = rectClient.bottom;
+
+	return bounds;
+}
+
+WgcPixelCapture::~WgcPixelCapture() {
 	if (m_pBuffer)
 	{
 		std::free(m_pBuffer);

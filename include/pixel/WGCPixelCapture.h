@@ -11,10 +11,9 @@
 #include <mutex>
 #include "IPixelCapture.h"
 
-class WGCPixelCapture : public IPixelCapture {
+class WgcPixelCapture : public IPixelCapture {
 private:
 	HWND m_targetHwnd = nullptr;
-
 	// the block below is initialized once
 	wil::com_ptr<ID3D11Device> m_device;
 	wil::com_ptr<ID3D11DeviceContext> m_context;
@@ -31,26 +30,33 @@ private:
 
 	void* m_pBuffer = nullptr;
 	size_t m_bufferCapacity = 0;
-	int m_width = 0;
-	int m_height = 0;
+	uint32_t m_width = 0;
+	uint32_t m_height = 0;
 
 	void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args);
-	bool EnsureStagingTexture(int width, int height);
+	bool EnsureStagingTexture(uint32_t width, uint32_t height);
+	Rect GetClientBounds() const override;
 public:
-	WGCPixelCapture() = default;
-	~WGCPixelCapture() override;
+	WgcPixelCapture() = default;
+	~WgcPixelCapture() override;
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
-	bool CaptureRegion(int x, int y, int width, int height) override;
+	bool CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
 
-	ColorRGBA GetPixel(int relX, int relY) const override;
-	inline const uint8_t* GetBuffer() const override {
-		return static_cast<const uint8_t*>(m_pBuffer);
+	ColorRgba GetPixel(uint32_t relX, uint32_t relY) const override;
+	inline FrameView GetFrameView() const noexcept override {
+		return {
+			.data = static_cast<const uint8_t*>(m_pBuffer),
+			.width = m_width,
+			.height = m_height,
+			.stride = m_width * 4,
+			.format = PixelFormat::Bgra8
+		};
 	};
-	inline int GetWidth() const override {
+	inline uint32_t GetWidth() const noexcept override {
 		return m_width;
 	};
-	inline int GetHeight() const override {
+	inline uint32_t GetHeight() const noexcept override {
 		return m_height;
 	};
 };

@@ -1,5 +1,7 @@
 #include <pixel/GdiPixelCapture.h>
 
+
+
 bool GdiPixelCapture::Initialize(HWND targetHwnd) {
 	m_targetHwnd = targetHwnd;
 	wil::unique_hdc_window hdcScreen = wil::GetDC(m_targetHwnd);
@@ -20,7 +22,7 @@ bool GdiPixelCapture::Initialize(HWND targetHwnd) {
 	return true;
 }
 
-bool GdiPixelCapture::CaptureRegion(int x, int y, int width, int height) {
+bool GdiPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
 	RECT captureBoundaries{};
 	if (m_targetHwnd) {
 		if (!GetClientRect(m_targetHwnd, &captureBoundaries))
@@ -66,18 +68,44 @@ bool GdiPixelCapture::CaptureRegion(int x, int y, int width, int height) {
 	return true;
 }
 
-ColorRGBA GdiPixelCapture::GetPixel(int relX, int relY) const {
+ColorRgba GdiPixelCapture::GetPixel(uint32_t relX, uint32_t relY) const {
 	if (!m_pBuffer)
-		return ColorRGBA{ 0, 0, 0, 0 };
+		return ColorRgba{};
 	if (relX >= m_width || relY >= m_height || relX < 0 || relY < 0)
-		return ColorRGBA{ 0, 0, 0, 0 };
+		return ColorRgba{};
 
-	const size_t index = static_cast<size_t>(relY * m_width + relX);
+	const size_t index = static_cast<size_t>(relY) * m_width + relX;
 
-	const ColorBGRA* pixelBytes = static_cast<const ColorBGRA*>(m_pBuffer);
-	const ColorBGRA pixel = pixelBytes[index];
+	const ColorBgra* pixelBytes = static_cast<const ColorBgra*>(m_pBuffer);
+	const ColorBgra pixel = pixelBytes[index];
 
-	return ColorRGBA{ pixel.r, pixel.g, pixel.b, pixel.a};
+	return ColorRgba{ 
+		.r = pixel.r, 
+		.g = pixel.g, 
+		.b = pixel.b,
+		.a = pixel.a
+	};
+}
+
+Rect GdiPixelCapture::GetClientBounds() const {
+	Rect bounds{};
+
+	if (!IsWindow(m_targetHwnd))
+		return bounds;
+
+	RECT rectWindow, rectClient;
+	GetWindowRect(m_targetHwnd, &rectWindow);
+	GetClientRect(m_targetHwnd, &rectClient);
+
+	POINT clientTopLeft{ 0, 0 };
+	ClientToScreen(m_targetHwnd, &clientTopLeft);
+
+	bounds.x = clientTopLeft.x - rectWindow.left;
+	bounds.y = clientTopLeft.y - rectWindow.top;
+	bounds.width = rectClient.right;
+	bounds.height = rectClient.bottom;
+
+	return bounds;
 }
 
 GdiPixelCapture::~GdiPixelCapture() {
