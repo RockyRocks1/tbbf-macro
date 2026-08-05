@@ -1,13 +1,13 @@
 #include <roblox/RobloxGame.h>
 
 
-RobloxGame::RobloxGame(HWND hwnd) : m_hwnd(hwnd) {
+RobloxGame::RobloxGame(HWND hwnd, PixelCaptureMode captureMode): m_hwnd(hwnd), m_captureMode(captureMode) {
 	UpdateClientBounds();
 };
 std::optional<RobloxGame> RobloxGame::FromHwnd(HWND hwnd, PixelCaptureMode captureMode) {
 	if (!WindowUtils::IsMainWindow(hwnd))
 		return std::nullopt;
-	RobloxGame game(hwnd);
+	RobloxGame game(hwnd, captureMode);
 	std::unique_ptr<IPixelCapture> capture;
 	switch (captureMode) {
 	case PixelCaptureMode::GDI:
@@ -31,28 +31,50 @@ std::optional<RobloxGame> RobloxGame::FromProcessId(DWORD processId, PixelCaptur
 
 	return RobloxGame::FromHwnd(mainWindowHwnd, captureMode);
 }
-bool RobloxGame::UpdateClientBounds() {
+FrameView RobloxGame::GetLatestFrame() const {
+	if (!m_pixelCapture)
+		return {};
+	if (!UpdateClientBounds())
+		return {};
+	FrameView fullFrame = m_pixelCapture->GetLatestFrame();
+	if (!fullFrame.data)
+		return {};
+	
+	std::optional<POINT> clientOffset;
+	switch (m_captureMode) {
+		case PixelCaptureMode::GDI:
+			clientOffset = WindowUtils::GetClientOffsetFromWindow(m_hwnd);
+			break;
+		case PixelCaptureMode::WGC:
+			clientOffset = WindowUtils::GetClientOffsetFromWgc(m_hwnd);
+			break;
+		default:
+			break;
+	}
+	if (!clientOffset) 
+		return {};
+
+	return PixelModifier::Crop(fullFrame, clientOffset->x, clientOffset->y, m_clientBounds.width, m_clientBounds.height);
+}
+bool RobloxGame::UpdateClientBounds() const {
 	if (!WinExists()) {
-		m_clientBounds = Rect{};
+		m_clientBounds.width = 0;
+		m_clientBounds.height = 0;
 		return false;
 	}
 	RECT clientRect;
 	if (!GetClientRect(m_hwnd, &clientRect))
 		return false;
-	m_clientBounds = {
-		0,
-		0,
-		clientRect.right - clientRect.left,
-		clientRect.bottom - clientRect.top
-	};
+
+	m_clientBounds.width = clientRect.right;
+	m_clientBounds.height = clientRect.bottom;
 	return true;
 }
 // WARNING: this requires setting roblox menu background opacity to zero
-bool RobloxGame::WasGameLoaded() const {
+bool RobloxGame::WasGameLoaded(const FrameView& currentFrame) const {
 	if (!WinExists())
 		return false;
-	const FrameView frameView = m_pixelCapture->GetFrameView();
-	if (!frameView.data)
+	if (!currentFrame.data)
 		return false;
 
 	static constexpr std::array<UDim2, 3> gameLoadedUDims = {
@@ -62,33 +84,32 @@ bool RobloxGame::WasGameLoaded() const {
 	};
 	const int maxVariation = 1;
 	static constexpr ColorRgba targetDefaultColor{ 0x12, 0x12, 0x15 };
-	for (UDim2 udim2 : gameLoadedUDims) {
+	for (const UDim2& udim2 : gameLoadedUDims) {
 		POINT pixelPosition = udim2.Resolve(m_clientBounds);
-		std::optional<ColorRgba> pixelColor = PixelAnalyzer::GetPixelColor(frameView, pixelPosition);
+		std::optional<ColorRgba> pixelColor = PixelAnalyzer::GetPixelColor(currentFrame, pixelPosition);
 		if (!pixelColor || !targetDefaultColor.IsCloseTo(*pixelColor, maxVariation))
 			return false;
 	}
 	return true;
 }
 
-bool RobloxGame::WasDisconnected() const {
+bool RobloxGame::WasDisconnected(const FrameView& currentFrame) const {
 	if (!WinExists())
 		return false;
-	const FrameView frameView = m_pixelCapture->GetFrameView();
-	if (!frameView.data)
+	if (!currentFrame.data)
 		return false;
 
-	const int maxVariation = 1;
 	static constexpr std::array<UDim2, 4> disconnectUDims = {
 		UDim2(0.5, -199, 0.5, -124),
 		UDim2(0.5, 199, 0.5, -124),
 		UDim2(0.5, -199, 0.5, 124),
 		UDim2(0.5, 199, 0.5, 124)
 	};
+	const int maxVariation = 1;
 	static constexpr ColorRgba targetGrayColor{ 0x39, 0x3B, 0x3D };
-	for (UDim2 udim2 : disconnectUDims) {
+	for (const UDim2& udim2 : disconnectUDims) {
 		POINT pixelPosition = udim2.Resolve(m_clientBounds);
-		std::optional<ColorRgba> pixelColor = PixelAnalyzer::GetPixelColor(frameView, pixelPosition);
+		std::optional<ColorRgba> pixelColor = PixelAnalyzer::GetPixelColor(currentFrame, pixelPosition);
 		if (!pixelColor || !targetGrayColor.IsCloseTo(*pixelColor, maxVariation))
 			return false;
 	}

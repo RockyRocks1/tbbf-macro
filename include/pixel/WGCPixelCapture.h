@@ -26,43 +26,27 @@ private:
 	winrt::event_token m_frameArrivedToken{};
 	winrt::Windows::Graphics::Capture::GraphicsCaptureSession m_captureSession{ nullptr };
 
-	wil::com_ptr<ID3D11Texture2D> m_currentSourceTexture;
 	wil::com_ptr<ID3D11Texture2D> m_stagingTexture;
-	std::mutex m_frameMutex;
+	mutable std::mutex m_frameMutex;
 
-	void* m_pBuffer = nullptr;
-	size_t m_bufferCapacity = 0;
-	int m_width = 0;
-	int m_height = 0;
+	FrameView m_latestFrame;
 	std::atomic<PixelCaptureStatus> m_status{ PixelCaptureStatus::Uninitialized };
 
 	void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args);
 	bool EnsureStagingTexture(int width, int height);
+	bool EnsureFramePool(winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame);
 public:
 	WgcPixelCapture() = default;
 	~WgcPixelCapture() override;
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
 	void Close() override;
-	bool CaptureRegion(const Rect& region) override;
-	bool CaptureClientRegion(const Rect& clientRegion) override;
 
 	inline PixelCaptureStatus GetStatus() const noexcept override {
 		return m_status.load();
 	}
-	inline FrameView GetFrameView() const noexcept override {
-		return {
-			.data = static_cast<const uint8_t*>(m_pBuffer),
-			.width = m_width,
-			.height = m_height,
-			.stride = static_cast<size_t>(m_width) * 4,
-			.format = PixelFormat::Bgra8
-		};
-	};
-	inline int GetWidth() const noexcept override {
-		return m_width;
-	};
-	inline int GetHeight() const noexcept override {
-		return m_height;
+	inline FrameView GetLatestFrame() const override {
+		std::lock_guard<std::mutex> lock(m_frameMutex);
+		return m_latestFrame;
 	};
 };

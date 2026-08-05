@@ -23,25 +23,16 @@ public:
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
 	void Close() override;
-	bool CaptureRegion(const Rect& region) override;
-	bool CaptureClientRegion(const Rect& clientRegion) override;
-
 	inline PixelCaptureStatus GetStatus() const {
 		return m_status.load();
 	}
-	inline FrameView GetFrameView() const noexcept {
+	inline FrameView GetLatestFrame() const {
 		return {
-			.data = static_cast<const uint8_t*>(m_pBuffer),
+			.data = nullptr,
 			.width = m_width,
 			.height = m_height,
 			.stride = static_cast<size_t>(m_width) * 4, // temp
 			.format = PixelFormat::Bgra8
 		};
-	}
-	inline int GetWidth() const noexcept override {
-		return m_width;
-	}
-	inline int GetHeight() const noexcept override {
-		return m_height;
 	}
 };

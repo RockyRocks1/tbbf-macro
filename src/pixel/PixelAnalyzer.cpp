@@ -36,7 +36,7 @@ std::optional<POINT> PixelAnalyzer::PixelSearch(const FrameView& frame, ColorRgb
 	const size_t idxG = static_cast<size_t>(BgraChannel::G);
 	const size_t idxB = static_cast<size_t>(BgraChannel::B);
 	for (int y = 0; y < frame.height; y++) {
-		const ColorBgra* pRow = reinterpret_cast<const ColorBgra*>(frame.data + frame.stride * y);
+		const ColorBgra* pRow = reinterpret_cast<const ColorBgra*>(frame.data.get() + frame.stride * y);
 
 		for (int x = 0; x < frame.width; x++) {
 			if (targetColor.IsCloseTo(pRow[x], variation))

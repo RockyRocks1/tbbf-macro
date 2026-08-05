@@ -11,7 +11,7 @@ bool PixelModifier::Map1to1(const FrameView& sourceView, FrameBuffer& destBuffer
 	const uint32_t destBytesPerPixel = destBuffer.GetBytesPerPixel();
 	
 	for (int y = 0; y < sourceView.height; y++) {
-		const uint8_t* pSourceRow = static_cast<const uint8_t*>(sourceView.data + sourceView.stride * y);
+		const uint8_t* pSourceRow = static_cast<const uint8_t*>(sourceView.data.get() + sourceView.stride * y);
 		uint8_t* pDestRow = destBuffer.data.data() + destBuffer.stride * y;
 
 		const uint8_t* pSourcePixel = pSourceRow;
@@ -28,14 +28,16 @@ bool PixelModifier::Map1to1(const FrameView& sourceView, FrameBuffer& destBuffer
 FrameView PixelModifier::Crop(const FrameView& sourceView, int x, int y, int width, int height) {
 	if (width <= 0 || height <= 0 || x + width > sourceView.width || y + height > sourceView.height)
 		return {};
-	FrameView view{};
-	view.data = sourceView.data + y * sourceView.stride + x * sourceView.GetBytesPerPixel();
-	view.width = width;
-	view.height = height;
-	view.format = sourceView.format;
-	view.stride = sourceView.stride;
+	size_t byteOffset = (static_cast<size_t>(y) * sourceView.stride) + (static_cast<size_t>(x) * sourceView.GetBytesPerPixel());
+	std::shared_ptr<const uint8_t[]> croppedData(sourceView.data, sourceView.data.get() + byteOffset);
 
-	return view;
+	return FrameView{
+		.data = croppedData,
+		.width = width,
+		.height = height,
+		.stride = sourceView.stride,
+		.format = sourceView.format
+	};
 }
 
 bool PixelModifier::Grayscale(const FrameView& sourceView, FrameBuffer& destBuffer) {

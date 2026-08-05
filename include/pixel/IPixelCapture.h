@@ -15,13 +15,8 @@ enum class PixelCaptureStatus {
 class IPixelCapture {
 public:
 	virtual ~IPixelCapture() = default;
-	virtual bool Initialize(HWND targetHwnd = nullptr) = 0;
+	virtual bool Initialize(HWND targetHwnd) = 0;
 	virtual void Close() = 0;
-	virtual bool CaptureRegion(const Rect& region) = 0;
-	virtual bool CaptureClientRegion(const Rect& region) = 0;
-
 	virtual PixelCaptureStatus GetStatus() const = 0;
-	virtual FrameView GetFrameView() const = 0;
-	virtual int GetWidth() const = 0;
-	virtual int GetHeight() const = 0;
+	virtual FrameView GetLatestFrame() const = 0;
 };

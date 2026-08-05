@@ -31,7 +31,7 @@ winrt::Windows::Graphics::Imaging::SoftwareBitmap CreateSoftwareBitmapFromFrameV
 	const uint32_t dstStride = planeDesc.Stride;
 	const size_t bytesPerPixelRow = static_cast<size_t>(frameView.GetBytesPerPixel() * frameView.width);
 	for (int y = 0; y < frameView.height; ++y) {
-		const uint8_t* srcRow = frameView.data + (y * frameView.stride);
+		const uint8_t* srcRow = frameView.data.get() + (y * frameView.stride);
 		uint8_t* dstRow = dstData + (y * dstStride);
 
 		std::memcpy(dstRow, srcRow, bytesPerPixelRow);

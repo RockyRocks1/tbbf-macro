@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
+#include <memory>
 
 struct ColorRgba;
 struct ColorBgra;
@@ -47,7 +48,7 @@ enum class PixelFormat : uint8_t {
 };
 
 struct FrameView {
-	const uint8_t* data = nullptr;
+    std::shared_ptr<const uint8_t[]> data;
 	int width = 0;
     int height = 0;
     size_t stride = 0;
@@ -88,14 +89,18 @@ struct FrameBuffer {
         frameBuffer.format = view.format;
 
         if (view.data && bufferSize > 0)
-            frameBuffer.data.assign(view.data, view.data + bufferSize);
+            frameBuffer.data.assign(view.data.get(), view.data.get() + bufferSize);
 
         return frameBuffer;
     }
     
     FrameView GetView() const noexcept {
+        std::shared_ptr<const uint8_t[]> sharedData(
+            data.data(),
+            [](const uint8_t*) {}
+        );
         return FrameView{ 
-            .data = data.data(), 
+            .data = sharedData,
             .width = width, 
             .height = height, 
             .stride = stride, 

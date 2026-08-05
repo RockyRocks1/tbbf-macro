@@ -64,9 +64,10 @@ bool WgcPixelCapture::Initialize(HWND targetHwnd) {
 }
 void WgcPixelCapture::Close() {
 	m_status.store(PixelCaptureStatus::Closed);
-	if (m_pBuffer) {
-		std::free(m_pBuffer);
-		m_pBuffer = nullptr;
+	{
+		std::lock_guard<std::mutex> lock(m_frameMutex);
+		if (m_latestFrame.data)
+			m_latestFrame = {};
 	}
 	if (m_framePool) {
 		if (m_frameArrivedToken) {
@@ -76,13 +77,74 @@ void WgcPixelCapture::Close() {
 		m_framePool.Close();
 		m_framePool = nullptr;
 	};
-}
+};
 void WgcPixelCapture::OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args) {
 	if (m_status.load() != PixelCaptureStatus::Running)
 		return;
+
 	winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame = sender.TryGetNextFrame();
-	if (!frame)
+	if (!EnsureFramePool(frame))
 		return;
+
+	const int frameWidth = m_currentFramePoolSize.Width;
+	const int frameHeight = m_currentFramePoolSize.Height;
+	auto access = frame.Surface().as<Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
+	wil::com_ptr<ID3D11Texture2D> newSourceTexture;
+	HRESULT	hrInterface = access->GetInterface(IID_PPV_ARGS(newSourceTexture.put()));
+
+	if (FAILED(hrInterface))
+		return;
+	
+	if (!EnsureStagingTexture(frameWidth, frameHeight))
+		return;
+
+	m_context->CopyResource(
+		m_stagingTexture.get(),
+		newSourceTexture.get()
+	);
+
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	HRESULT hrMap = m_context->Map(m_stagingTexture.get(), 0, D3D11_MAP::D3D11_MAP_READ, 0, &mapped);
+	if (FAILED(hrMap))
+		return;
+	const size_t stride = static_cast<size_t>(frameWidth) * 4;
+	const size_t requiredBytes = stride * frameHeight;
+
+	void* newBuffer = std::malloc(requiredBytes);
+		
+	if (!newBuffer) {
+		m_context->Unmap(m_stagingTexture.get(), 0);
+		return;
+	}
+
+	const uint8_t* sourceBytes = static_cast<const uint8_t*>(mapped.pData);
+	uint8_t* destStart = static_cast<uint8_t*>(newBuffer);
+	uint8_t* destIter = destStart;
+
+	for (int row = 0; row < frameHeight; row++) {
+		std::memcpy(destIter, sourceBytes, stride);
+		destIter += stride;
+		sourceBytes += mapped.RowPitch;
+	}
+
+	m_context->Unmap(m_stagingTexture.get(), 0);
+	{
+		std::lock_guard<std::mutex> lock(m_frameMutex);
+		FrameView newFrameView{
+			.data = std::shared_ptr<const uint8_t[]>(destStart, [destStart](const uint8_t*) {
+				std::free(destStart);
+			}),
+			.width = frameWidth,
+			.height = frameHeight,
+			.stride = stride,
+			.format = PixelFormat::Bgra8
+		};
+		m_latestFrame = newFrameView;
+	};
+}
+bool WgcPixelCapture::EnsureFramePool(winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame) {
+	if (!frame)
+		return false;
 	winrt::Windows::Graphics::SizeInt32 newFrameSize = frame.ContentSize();
 	if (newFrameSize.Width != m_currentFramePoolSize.Width || newFrameSize.Height != m_currentFramePoolSize.Height) {
 		m_currentFramePoolSize = newFrameSize;
@@ -93,18 +155,9 @@ void WgcPixelCapture::OnFrameArrived(const winrt::Windows::Graphics::Capture::Di
 			m_currentFramePoolSize
 		);
 	}
-	auto access = frame.Surface().as<Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
-	wil::com_ptr<ID3D11Texture2D> newSourceTexture;
-	HRESULT result = access->GetInterface(IID_PPV_ARGS(newSourceTexture.put()));
-	if (FAILED(result))
-		return;
-	{
-		std::lock_guard<std::mutex> lock(m_frameMutex);
-		m_currentSourceTexture = newSourceTexture;
-	}
+	return true;
 }
-bool WgcPixelCapture::EnsureStagingTexture(int width, int height)
-{
+bool WgcPixelCapture::EnsureStagingTexture(int width, int height) {
 	if (m_stagingTexture) {
 		D3D11_TEXTURE2D_DESC stagingDesc{};
 		m_stagingTexture->GetDesc(&stagingDesc);
@@ -128,99 +181,6 @@ bool WgcPixelCapture::EnsureStagingTexture(int width, int height)
 	m_stagingTexture.reset();
 	HRESULT result = m_device->CreateTexture2D(&desc, nullptr, m_stagingTexture.put());
 	return SUCCEEDED(result);
-}
-
-bool WgcPixelCapture::CaptureRegion(const Rect& region) {
-	if (m_status.load() != PixelCaptureStatus::Running)
-		return false;
-
-	if (region.width <= 0 || region.height <= 0 || region.x < 0 || region.y < 0)
-		return false;
-
-	if (!m_context)
-		return false;
-
-	wil::com_ptr<ID3D11Texture2D> localTexture;
-	{
-		std::lock_guard<std::mutex> lock(m_frameMutex);
-		localTexture = m_currentSourceTexture;
-	}
-	if (!localTexture)
-		return false;
-
-	D3D11_TEXTURE2D_DESC sourceDesc{};
-	localTexture->GetDesc(&sourceDesc);
-	
-	D3D11_BOX box{};
-	box.left = static_cast<uint32_t>(region.x);
-	box.top = static_cast<uint32_t>(region.y);
-	box.front = 0;
-	box.right = box.left + static_cast<uint32_t>(region.width);
-	box.bottom = box.top + static_cast<uint32_t>(region.height);
-	box.back = 1;
-
-	if (box.right > sourceDesc.Width || box.bottom > sourceDesc.Height)
-		return false;
-
-	if (!EnsureStagingTexture(region.width, region.height))
-		return false;
-
-	m_context->CopySubresourceRegion(
-		m_stagingTexture.get(), 0,
-		0, 0, 0,
-		localTexture.get(), 0,
-		&box
-	);
-
-	D3D11_MAPPED_SUBRESOURCE mapped{};
-	HRESULT result = m_context->Map(m_stagingTexture.get(), 0, D3D11_MAP::D3D11_MAP_READ, 0, &mapped);
-	if (FAILED(result))
-		return false;
-	const size_t rowPitchBytes = static_cast<size_t>(region.width) * 4;
-	const size_t requiredBytes = rowPitchBytes * region.height;
-
-	if (requiredBytes > m_bufferCapacity) {
-		void* newBuffer = std::realloc(m_pBuffer, requiredBytes);
-		if (!newBuffer) {
-			m_context->Unmap(m_stagingTexture.get(), 0);
-			return false;
-		}
-		m_pBuffer = newBuffer;
-		m_bufferCapacity = requiredBytes;
-	}
-	
-	m_width = region.width;
-	m_height = region.height;
-
-	const uint8_t* sourceBytes = static_cast<const uint8_t*>(mapped.pData);
-	uint8_t* destBytes = static_cast<uint8_t*>(m_pBuffer);
-
-	for (int row = 0; row < region.height; row++) {
-		std::memcpy(destBytes, sourceBytes, rowPitchBytes);
-		destBytes += rowPitchBytes;
-		sourceBytes += mapped.RowPitch;
-	}
-
-	m_context->Unmap(m_stagingTexture.get(), 0);
-	return true;
-}
-
-bool WgcPixelCapture::CaptureClientRegion(const Rect& clientRegion) {
-	if (clientRegion.width <= 0 || clientRegion.height <= 0 || clientRegion.x < 0 || clientRegion.y < 0)
-		return false;
-
-	std::optional<POINT> clientOffset = WindowUtils::GetClientOffsetFromWgc(m_targetHwnd);
-
-	if (!clientOffset)
-		return false;
-	Rect windowRegion{
-		clientRegion.x + clientOffset->x,
-		clientRegion.y + clientOffset->y,
-		clientRegion.width,
-		clientRegion.height
-	};
-
-	return CaptureRegion(windowRegion);
 }
 WgcPixelCapture::~WgcPixelCapture() {
 	Close();

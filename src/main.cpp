@@ -16,14 +16,26 @@ int main() {
         HWND robloxHwnd = FindWindowA(nullptr, "Roblox");
         std::optional<RobloxGame> game = RobloxGame::FromHwnd(robloxHwnd);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        if (game) {
-            game->UpdateClientBounds();
-            IPixelCapture* pixelCapture = game->GetPixelCapture();
-            std::cout << pixelCapture->CaptureClientRegion(game->GetClientBounds()) << std::endl;
+
+        std::cout << "Waiting..." << std::endl;
+        auto startTime = std::chrono::high_resolution_clock::now();
+        while (true) {
+            if (!game)
+                break;
             
-            if (game->WasGameLoaded())
-                std::cout << "Disconnected Check Success..." << std::endl;
+            const FrameView currentFrame = game->GetLatestFrame();
+            if (currentFrame.data) {
+                if (game->WasGameLoaded(currentFrame)) {
+                    std::cout << "Game loaded" << std::endl;
+                    break;
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+        std::cout << "Time: " <<  std::fixed << duration << std::endl;
     }
     curl_global_cleanup();
 
