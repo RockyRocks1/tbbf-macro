@@ -26,7 +26,7 @@ set(IMGUI_TARGET_SOURCES
     ${imgui_SOURCE_DIR}/backends/imgui_impl_dx11.cpp
 )
 
-add_library(imgui STATIC ${IMGUI_TARGET_SOURCES})
+add_library(imgui STATIC ${IMGUI_TARGET_SOURCES} )
 target_include_directories(imgui PUBLIC 
     ${imgui_SOURCE_DIR} 
     ${imgui_SOURCE_DIR}/backends
@@ -70,6 +70,7 @@ add_executable(${PROJECT_NAME}
     src/pixel/GdiPixelCapture.cpp 
     src/pixel/WgcPixelCapture.cpp
     src/pixel/PixelModifier.cpp
+    src/pixel/PixelAnalyzer.cpp
     src/http/HttpClient.cpp
     src/roblox/RobloxWeb.cpp
     src/roblox/RobloxLauncher.cpp

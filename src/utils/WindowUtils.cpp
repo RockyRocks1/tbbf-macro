@@ -20,32 +20,48 @@ namespace { // prevents name conflicts
 }
 
 bool WindowUtils::IsMainWindow(HWND hwnd) {
-    return GetWindow(hwnd, GW_OWNER) == nullptr && IsWindowVisible(hwnd);
+    return !GetWindow(hwnd, GW_OWNER) && IsWindowVisible(hwnd);
 }
 
 HWND WindowUtils::FindMainWindow(DWORD processId) {
     HwndData data{ processId, nullptr };
-    EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&data));
+    EnumWindows(::EnumWindowsCallback, reinterpret_cast<LPARAM>(&data));
     return data.hwnd;
 }
 
-Rect WindowUtils::GetClientRectRelativeToWindow(HWND hwnd) {
+std::optional<POINT> WindowUtils::GetClientOffsetFromWindow(HWND hwnd) {
     Rect bounds{};
-
+    
     if (!IsWindow(hwnd))
-        return bounds;
+        return std::nullopt;
 
-    RECT rectWindow, rectClient;
-    GetWindowRect(hwnd, &rectWindow);
-    GetClientRect(hwnd, &rectClient);
+    RECT rectWindow;
+    if (!GetWindowRect(hwnd, &rectWindow))
+        return std::nullopt;
 
     POINT clientTopLeft{ 0, 0 };
-    ClientToScreen(hwnd, &clientTopLeft);
+    if (!ClientToScreen(hwnd, &clientTopLeft))
+        return std::nullopt;
 
-    bounds.x = clientTopLeft.x - rectWindow.left;
-    bounds.y = clientTopLeft.y - rectWindow.top;
-    bounds.width = rectClient.right;
-    bounds.height = rectClient.bottom;
-
-    return bounds;
+    return POINT{
+        clientTopLeft.x - rectWindow.left,
+        clientTopLeft.y - rectWindow.top
+    };
 };
+std::optional<POINT> WindowUtils::GetClientOffsetFromWgc(HWND hwnd) {
+    if (!hwnd || !IsWindow(hwnd))
+        return std::nullopt;
+
+    POINT offset{ 0, 0 };
+
+    if (!ClientToScreen(hwnd, &offset)) 
+        return std::nullopt;
+
+    RECT wgcRect{};
+    if (FAILED(DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &wgcRect, sizeof(wgcRect))))
+        return std::nullopt;
+
+    offset.x -= wgcRect.left;
+    offset.y -= wgcRect.top;
+    return offset;
+}

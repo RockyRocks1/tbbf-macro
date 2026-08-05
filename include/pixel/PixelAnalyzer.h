@@ -1,18 +1,17 @@
 #pragma once
 
 #include <vector>
+#include <optional>
 #include "IPixelCapture.h"
 
-struct CoordPair {
-	uint32_t x = 0;
-	uint32_t y = 0;
-};
+
 class PixelAnalyzer {
+private:
+	static bool CheckSanityOfAnalysis(const FrameView& frame, std::optional<POINT> coords) noexcept;
 public:
 	PixelAnalyzer() = delete;
 
-	static bool GetPixelColor(ColorRgba& outResult, const FrameView& frame, uint32_t x, uint32_t y);
-	static bool PixelSearch(CoordPair& outResult, const FrameView& frame, ColorRgba targetColor, int variation = 0);
-	static std::vector<CoordPair> FindPixelOccurrences(const FrameView& frame, ColorRgba targetColor, int variation = 0);
-	static bool BitmapSearch(CoordPair& outResult, const FrameView& frame, const FrameView& targetBitmap);
-}
+	static std::optional<ColorRgba> GetPixelColor(const FrameView& frame, const POINT& coords);
+	static std::optional<POINT> PixelSearch(const FrameView& frame, ColorRgba targetColor, int variation = 0);
+	static std::optional<POINT> BitmapSearch(const FrameView& frame, const FrameView& targetFrame);
+};

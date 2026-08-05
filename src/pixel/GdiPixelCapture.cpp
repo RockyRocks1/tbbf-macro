@@ -4,7 +4,7 @@
 
 bool GdiPixelCapture::Initialize(HWND targetHwnd) {
 	m_targetHwnd = targetHwnd;
-	wil::unique_hdc_window hdcScreen = wil::GetDC(m_targetHwnd);
+	wil::unique_hdc_window hdcScreen = wil::GetDC(nullptr);
 	if (!hdcScreen)
 		return false;
 
@@ -21,27 +21,22 @@ bool GdiPixelCapture::Initialize(HWND targetHwnd) {
 
 	return true;
 }
-
-bool GdiPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-	RECT captureBoundaries{};
-	if (m_targetHwnd) {
-		if (!GetClientRect(m_targetHwnd, &captureBoundaries))
-			return false;
-	} else {
-		captureBoundaries.left = GetSystemMetrics(SM_XVIRTUALSCREEN);
-		captureBoundaries.top = GetSystemMetrics(SM_YVIRTUALSCREEN);
-		captureBoundaries.right = captureBoundaries.left + GetSystemMetrics(SM_CXVIRTUALSCREEN);
-		captureBoundaries.bottom = captureBoundaries.top + GetSystemMetrics(SM_CYVIRTUALSCREEN);
-	}
-	if (x < captureBoundaries.left || y < captureBoundaries.top || (x + width) > captureBoundaries.right || (y + height) > captureBoundaries.bottom)
+bool GdiPixelCapture::CaptureRegion(const Rect& region) {
+	RECT windowRect{};
+	if (!GetWindowRect(m_targetHwnd, &windowRect))
+		return false;
+	if (region.width <= 0 || region.height <= 0)
 		return false;
 
-	if (m_width != width || m_height != height || !m_hBitmap) {
-		m_width = width;
-		m_height = height;
+	if (region.x < 0 || region.y < 0 || (region.x + region.width) > windowRect.right || (region.y + region.height) > windowRect.bottom)
+		return false;
+
+	if (m_width != region.width || m_height != region.height || !m_hBitmap) {
+		m_width = region.width;
+		m_height = region.height;
 		
-		m_bitmapInfo.bmiHeader.biWidth = width;
-		m_bitmapInfo.bmiHeader.biHeight = -height;
+		m_bitmapInfo.bmiHeader.biWidth = region.width;
+		m_bitmapInfo.bmiHeader.biHeight = -region.height;
 		m_hBitmap = wil::unique_hbitmap(CreateDIBSection(
 			m_hdcMemory.get(),
 			&m_bitmapInfo,
@@ -62,12 +57,28 @@ bool GdiPixelCapture::CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint
 	if (!hdcScreen)
 		return false;
 
-	if (!BitBlt(m_hdcMemory.get(), 0, 0, width, height, hdcScreen.get(), x, y, SRCCOPY))
+	if (!BitBlt(m_hdcMemory.get(), 0, 0, region.width, region.height, hdcScreen.get(), region.x, region.y, SRCCOPY))
 		return false;
 
 	return true;
 }
+bool GdiPixelCapture::CaptureClientRegion(const Rect& clientRegion) {
+	if (clientRegion.width <= 0 || clientRegion.height <= 0 || clientRegion.x < 0 || clientRegion.y < 0)
+		return false;
 
+	std::optional<POINT> clientOffect = WindowUtils::GetClientOffsetFromWindow(m_targetHwnd);
+
+	if (!clientOffect)
+		return false;
+	
+	Rect windowRegion{
+		clientRegion.x + clientOffect->x,
+		clientRegion.y + clientOffect->y,
+		clientRegion.width,
+		clientRegion.height
+	};
+	return CaptureRegion(windowRegion);
+}
 GdiPixelCapture::~GdiPixelCapture() {
 	if (m_hdcMemory && m_hOldBitmap) {
 		SelectObject(m_hdcMemory.get(), m_hOldBitmap);

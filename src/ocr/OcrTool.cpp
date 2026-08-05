@@ -29,8 +29,8 @@ winrt::Windows::Graphics::Imaging::SoftwareBitmap CreateSoftwareBitmapFromFrameV
 
 	BitmapPlaneDescription planeDesc = bitmapBuffer.GetPlaneDescription(0);
 	const uint32_t dstStride = planeDesc.Stride;
-	const uint32_t bytesPerPixelRow = frameView.GetBytesPerPixel() * frameView.width;
-	for (uint32_t y = 0; y < frameView.height; ++y) {
+	const size_t bytesPerPixelRow = static_cast<size_t>(frameView.GetBytesPerPixel() * frameView.width);
+	for (int y = 0; y < frameView.height; ++y) {
 		const uint8_t* srcRow = frameView.data + (y * frameView.stride);
 		uint8_t* dstRow = dstData + (y * dstStride);
 

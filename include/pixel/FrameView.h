@@ -4,9 +4,11 @@
 
 struct ColorRgba {
     uint8_t r = 0, g = 0, b = 0, a = 255;
+    bool operator==(const ColorRgba&) const = default;
 };
 struct ColorBgra {
     uint8_t b = 0, g = 0, r = 0, a = 255;
+    bool operator==(const ColorBgra&) const = default;
 };
 enum class BgraChannel : uint8_t {
     B = 0,
@@ -27,15 +29,15 @@ enum class PixelFormat : uint8_t {
 
 struct FrameView {
 	const uint8_t* data = nullptr;
-	uint32_t width = 0;
-    uint32_t height = 0;
-    uint32_t stride = 0;
+	int width = 0;
+    int height = 0;
+    size_t stride = 0;
 	PixelFormat format = PixelFormat::Bgra8;
 
-    inline uint32_t GetBufferSize() const noexcept {
+    inline size_t GetBufferSize() const noexcept {
         return stride * height;
     }
-    inline uint32_t GetBytesPerPixel() const noexcept {
+    inline uint8_t GetBytesPerPixel() const noexcept {
         switch (format) {
         case PixelFormat::Bgra8:
             return 4;
@@ -45,16 +47,16 @@ struct FrameView {
             return 0;
         };
     }
-    inline uint32_t GetRowPadding() const noexcept {
-        return stride - width * GetBytesPerPixel();
+    inline size_t GetRowPadding() const noexcept {
+        return stride - static_cast<size_t>(width * GetBytesPerPixel());
     }
 };
 
 struct FrameBuffer {
     std::vector<uint8_t> data;
-    uint32_t width = 0;
-    uint32_t height = 0;
-    uint32_t stride = 0;
+    int width = 0;
+    int height = 0;
+    size_t stride = 0;
     PixelFormat format = PixelFormat::Bgra8;
 
     static FrameBuffer FromView(const FrameView& view) {
@@ -81,10 +83,10 @@ struct FrameBuffer {
             .format = format 
         };
     }
-    static inline uint32_t GetOptimalStride(uint32_t currentStride, uint8_t alignment = 64) noexcept {
+    static inline size_t GetOptimalStride(size_t currentStride, size_t alignment = 64) noexcept {
         return (currentStride + alignment) & ~alignment;
     }
-    inline uint32_t GetBytesPerPixel() const noexcept {
+    inline size_t GetBytesPerPixel() const noexcept {
         switch (format) {
         case PixelFormat::Bgra8:
             return 4;
@@ -94,7 +96,7 @@ struct FrameBuffer {
             return 0;
         };
     }
-    inline uint32_t GetRowPadding() const noexcept {
+    inline size_t GetRowPadding() const noexcept {
         return stride - width * GetBytesPerPixel();
     }
 };

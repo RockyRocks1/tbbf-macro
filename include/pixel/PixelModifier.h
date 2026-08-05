@@ -16,7 +16,7 @@ private:
 	static bool Map1to1(const FrameView& sourceView, FrameBuffer& destBuffer, Func iteratorFunction);
 public:	
 	PixelModifier() = delete;
-	static FrameView Crop(const FrameView& sourceView, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+	static FrameView Crop(const FrameView& sourceView, int x, int y, int width, int height);
 
 
 	static bool Grayscale(const FrameView& sourceView, FrameBuffer& destBuffer);

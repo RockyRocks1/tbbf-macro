@@ -13,28 +13,29 @@ private:
 	HBITMAP m_hOldBitmap{};
 
 	void* m_pBuffer = nullptr;
-	uint32_t m_width = 0;
-	uint32_t m_height = 0;
+	int m_width = 0;
+	int m_height = 0;
 public:
 	GdiPixelCapture() = default;
 	~GdiPixelCapture() override;
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
-	bool CaptureRegion(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
+	bool CaptureRegion(const Rect& region) override;
+	bool CaptureClientRegion(const Rect& clientRegion) override;
 
 	inline FrameView GetFrameView() const noexcept {
 		return {
 			.data = static_cast<const uint8_t*>(m_pBuffer),
 			.width = m_width,
 			.height = m_height,
-			.stride = m_width * 4, // temp
+			.stride = static_cast<size_t>(m_width) * 4, // temp
 			.format = PixelFormat::Bgra8
 		};
 	}
-	inline uint32_t GetWidth() const noexcept override {
+	inline int GetWidth() const noexcept override {
 		return m_width;
 	}
-	inline uint32_t GetHeight() const noexcept override {
+	inline int GetHeight() const noexcept override {
 		return m_height;
 	}
 };

@@ -31,6 +31,42 @@ std::optional<RobloxGame> RobloxGame::FromProcessId(DWORD processId, PixelCaptur
 
 	return RobloxGame::FromHwnd(mainWindowHwnd, captureMode);
 }
-void RobloxGame::UpdateClientBounds() {
+bool RobloxGame::UpdateClientBounds() {
+	if (!WinExists()) {
+		m_clientBounds = Rect{};
+		return false;
+	}
+	RECT clientRect;
+	if (!GetClientRect(m_hwnd, &clientRect))
+		return false;
+	m_clientBounds = {
+		0,
+		0,
+		clientRect.right - clientRect.left,
+		clientRect.bottom - clientRect.top
+	};
+	return true;
+}
+bool RobloxGame::WasDisconnected() const {
+	if (!WinExists())
+		return false;
+	const FrameView frameView = m_pixelCapture->GetFrameView();
+	if (!frameView.data)
+		return false;
 
+	static constexpr std::array<UDim2, 4> disconnectUDims = {
+		UDim2(0.5, -198, 0.5, -124),
+		UDim2(0.5, 198, 0.5, -124),
+		UDim2(0.5, -198, 0.5, 124),
+		UDim2(0.5, 198, 0.5, 124)
+	};
+	static constexpr ColorRgba targetGrayColor{ 0x39, 0x3B, 0x3D };
+	
+	for (UDim2 udim2 : disconnectUDims) {
+		POINT pixelPosition = udim2.Resolve(m_clientBounds);
+		std::optional<ColorRgba> pixelColor = PixelAnalyzer::GetPixelColor(frameView, pixelPosition);
+		if (!pixelColor || *pixelColor != targetGrayColor)
+			return false;
+	}
+	return true;
 }

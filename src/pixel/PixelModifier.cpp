@@ -25,8 +25,8 @@ bool PixelModifier::Map1to1(const FrameView& sourceView, FrameBuffer& destBuffer
 	return true;
 }
 
-FrameView PixelModifier::Crop(const FrameView& sourceView, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-	if (x + width > sourceView.width || y + height > sourceView.height)
+FrameView PixelModifier::Crop(const FrameView& sourceView, int x, int y, int width, int height) {
+	if (width <= 0 || height <= 0 || x + width > sourceView.width || y + height > sourceView.height)
 		return {};
 	FrameView view{};
 	view.data = sourceView.data + y * sourceView.stride + x * sourceView.GetBytesPerPixel();
@@ -41,8 +41,8 @@ FrameView PixelModifier::Crop(const FrameView& sourceView, uint32_t x, uint32_t 
 bool PixelModifier::Grayscale(const FrameView& sourceView, FrameBuffer& destBuffer) {
 	if (sourceView.format != PixelFormat::Bgra8)
 		return false;
-	const uint32_t newStride = FrameBuffer::GetOptimalStride(sourceView.width);
-	const size_t vectorSize = static_cast<size_t>(newStride) * sourceView.height;
+	const size_t newStride = FrameBuffer::GetOptimalStride(sourceView.width);
+	const size_t vectorSize = newStride * sourceView.height;
 	
 	destBuffer.data.resize(vectorSize);
 	destBuffer.width = sourceView.width;
