@@ -3,6 +3,8 @@
 
 
 bool WgcPixelCapture::Initialize(HWND targetHwnd) {
+	if (m_status.load() != PixelCaptureStatus::Uninitialized)
+		return false;
 	m_targetHwnd = targetHwnd;
 	HRESULT result = D3D11CreateDevice(
 		nullptr,
@@ -57,9 +59,27 @@ bool WgcPixelCapture::Initialize(HWND targetHwnd) {
 	m_captureSession.IsCursorCaptureEnabled(false);
 	m_captureSession.IsBorderRequired(false);
 	m_captureSession.StartCapture();
+	m_status.store(PixelCaptureStatus::Running);
 	return true;
 }
+void WgcPixelCapture::Close() {
+	m_status.store(PixelCaptureStatus::Closed);
+	if (m_pBuffer) {
+		std::free(m_pBuffer);
+		m_pBuffer = nullptr;
+	}
+	if (m_framePool) {
+		if (m_frameArrivedToken) {
+			m_framePool.FrameArrived(m_frameArrivedToken);
+			m_frameArrivedToken = {};
+		}
+		m_framePool.Close();
+		m_framePool = nullptr;
+	};
+}
 void WgcPixelCapture::OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args) {
+	if (m_status.load() != PixelCaptureStatus::Running)
+		return;
 	winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame = sender.TryGetNextFrame();
 	if (!frame)
 		return;
@@ -111,6 +131,9 @@ bool WgcPixelCapture::EnsureStagingTexture(int width, int height)
 }
 
 bool WgcPixelCapture::CaptureRegion(const Rect& region) {
+	if (m_status.load() != PixelCaptureStatus::Running)
+		return false;
+
 	if (region.width <= 0 || region.height <= 0 || region.x < 0 || region.y < 0)
 		return false;
 
@@ -200,10 +223,5 @@ bool WgcPixelCapture::CaptureClientRegion(const Rect& clientRegion) {
 	return CaptureRegion(windowRegion);
 }
 WgcPixelCapture::~WgcPixelCapture() {
-	if (m_pBuffer)
-	{
-		std::free(m_pBuffer);
-		m_pBuffer = nullptr;
-	}
-	// TODO: add the rest of the cleanup....
+	Close();
 }

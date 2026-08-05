@@ -10,6 +10,7 @@
 #include <d3d11.h>
 #include <mutex>
 #include "IPixelCapture.h"
+#include <atomic>
 #include <utils/WindowUtils.h>
 
 class WgcPixelCapture : public IPixelCapture {
@@ -33,6 +34,7 @@ private:
 	size_t m_bufferCapacity = 0;
 	int m_width = 0;
 	int m_height = 0;
+	std::atomic<PixelCaptureStatus> m_status{ PixelCaptureStatus::Uninitialized };
 
 	void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args);
 	bool EnsureStagingTexture(int width, int height);
@@ -41,9 +43,13 @@ public:
 	~WgcPixelCapture() override;
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
+	void Close() override;
 	bool CaptureRegion(const Rect& region) override;
 	bool CaptureClientRegion(const Rect& clientRegion) override;
 
+	inline PixelCaptureStatus GetStatus() const noexcept override {
+		return m_status.load();
+	}
 	inline FrameView GetFrameView() const noexcept override {
 		return {
 			.data = static_cast<const uint8_t*>(m_pBuffer),

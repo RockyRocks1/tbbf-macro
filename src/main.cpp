@@ -21,7 +21,7 @@ int main() {
             IPixelCapture* pixelCapture = game->GetPixelCapture();
             std::cout << pixelCapture->CaptureClientRegion(game->GetClientBounds()) << std::endl;
             
-            if (game->WasDisconnected())
+            if (game->WasGameLoaded())
                 std::cout << "Disconnected Check Success..." << std::endl;
         }
     }

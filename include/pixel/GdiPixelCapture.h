@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <wil/resource.h>
+#include <atomic>
 #include "IPixelCapture.h"
 
 
@@ -15,14 +16,19 @@ private:
 	void* m_pBuffer = nullptr;
 	int m_width = 0;
 	int m_height = 0;
+	std::atomic<PixelCaptureStatus> m_status{ PixelCaptureStatus::Uninitialized };
 public:
 	GdiPixelCapture() = default;
 	~GdiPixelCapture() override;
 
 	bool Initialize(HWND targetHwnd = nullptr) override;
+	void Close() override;
 	bool CaptureRegion(const Rect& region) override;
 	bool CaptureClientRegion(const Rect& clientRegion) override;
 
+	inline PixelCaptureStatus GetStatus() const {
+		return m_status.load();
+	}
 	inline FrameView GetFrameView() const noexcept {
 		return {
 			.data = static_cast<const uint8_t*>(m_pBuffer),

@@ -3,6 +3,9 @@
 
 
 bool GdiPixelCapture::Initialize(HWND targetHwnd) {
+	if (m_status.load() != PixelCaptureStatus::Uninitialized)
+		return false;
+
 	m_targetHwnd = targetHwnd;
 	wil::unique_hdc_window hdcScreen = wil::GetDC(nullptr);
 	if (!hdcScreen)
@@ -19,10 +22,22 @@ bool GdiPixelCapture::Initialize(HWND targetHwnd) {
 	bitmapInfo.bmiHeader.biCompression = BI_RGB;
 	m_bitmapInfo = bitmapInfo;
 
+	m_status.store(PixelCaptureStatus::Running);
 	return true;
+}
+void GdiPixelCapture::Close() {
+	m_status.store(PixelCaptureStatus::Closed);
+	if (m_hdcMemory && m_hOldBitmap) {
+		SelectObject(m_hdcMemory.get(), m_hOldBitmap);
+		m_hOldBitmap = nullptr;
+	}
+	m_hBitmap.reset();
+	m_hdcMemory.reset();
 }
 bool GdiPixelCapture::CaptureRegion(const Rect& region) {
 	RECT windowRect{};
+	if (m_status.load() != PixelCaptureStatus::Running)
+		return false;
 	if (!GetWindowRect(m_targetHwnd, &windowRect))
 		return false;
 	if (region.width <= 0 || region.height <= 0)
@@ -80,10 +95,5 @@ bool GdiPixelCapture::CaptureClientRegion(const Rect& clientRegion) {
 	return CaptureRegion(windowRegion);
 }
 GdiPixelCapture::~GdiPixelCapture() {
-	if (m_hdcMemory && m_hOldBitmap) {
-		SelectObject(m_hdcMemory.get(), m_hOldBitmap);
-		m_hOldBitmap = nullptr;
-	}
-	m_hBitmap.reset();
-	m_hdcMemory.reset();
+	Close();
 }
