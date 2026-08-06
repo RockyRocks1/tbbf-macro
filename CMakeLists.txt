@@ -78,6 +78,10 @@ add_executable(${PROJECT_NAME}
     src/ocr/OcrTool.cpp
     src/utils/WindowUtils.cpp
     src/utils/ProcessUtils.cpp
+    src/tbbf/TbbfMacroManager.cpp
+    src/tbbf/TbbfMacroInstance.cpp
+    src/tbbf/DisconnectBehavior.cpp
+    src/tbbf/GameLoadedBehavior.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include

@@ -1,3 +1,4 @@
+#pragma once
 #include <utils/WindowUtils.h>
 
 struct UDim2 {

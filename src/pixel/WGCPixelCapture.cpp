@@ -63,20 +63,7 @@ bool WgcPixelCapture::Initialize(HWND targetHwnd) {
 	return true;
 }
 void WgcPixelCapture::Close() {
-	m_status.store(PixelCaptureStatus::Closed);
-	{
-		std::lock_guard<std::mutex> lock(m_frameMutex);
-		if (m_latestFrame.data)
-			m_latestFrame = {};
-	}
-	if (m_framePool) {
-		if (m_frameArrivedToken) {
-			m_framePool.FrameArrived(m_frameArrivedToken);
-			m_frameArrivedToken = {};
-		}
-		m_framePool.Close();
-		m_framePool = nullptr;
-	};
+	
 };
 void WgcPixelCapture::OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender, const winrt::Windows::Foundation::IInspectable& args) {
 	if (m_status.load() != PixelCaptureStatus::Running)
@@ -183,5 +170,24 @@ bool WgcPixelCapture::EnsureStagingTexture(int width, int height) {
 	return SUCCEEDED(result);
 }
 WgcPixelCapture::~WgcPixelCapture() {
-	Close();
+	m_status.store(PixelCaptureStatus::Closed);
+	{
+		std::lock_guard<std::mutex> lock(m_frameMutex);
+		if (m_latestFrame.data)
+			m_latestFrame = {};
+	}
+	if (m_framePool) {
+		if (m_frameArrivedToken) {
+			m_framePool.FrameArrived(m_frameArrivedToken);
+			m_frameArrivedToken = {};
+		}
+		m_framePool.Close();
+		m_framePool = nullptr;
+	};
+	if (m_captureSession) {
+		m_captureSession.Close();
+		m_captureSession = nullptr;
+	}
+	m_item = nullptr;
+	m_direct3DDevice = nullptr;
 }
