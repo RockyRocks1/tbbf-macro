@@ -1,16 +1,17 @@
 #include <macro/IMacroInstance.h>
+#include "TbbfCustomContext.h"
 #include "DisconnectBehavior.h"
 #include "GameLoadedBehavior.h"
+#include "CentralContextBehavior.h"
+#include "VoteMenuBehavior.h"
+#include "TowerListBehavior.h"
 
-struct TbbfCustomContext {
-	int enforcerTowerIndex;
-	int voidTraitorTowerIndex;
-};
+
 class TbbfMacroInstance : public IMacroInstance {
 private:
 	std::jthread m_thread;
-	TbbfCustomContext m_context{};
 	std::unique_ptr<RobloxGame> m_game;
+	std::unique_ptr<TbbfCustomContext> m_context;
 	std::vector<std::unique_ptr<IMacroBehavior>> m_behaviors;
 	std::atomic<bool> m_isLoopRunning{ false };
 	void PerformMainLoop();
@@ -19,13 +20,13 @@ public:
 	~TbbfMacroInstance() override = default;
 
 	bool Initialize(std::unique_ptr<RobloxGame> game) override;
-	inline void* GetCustomContext() override {
-		return static_cast<void*>(&m_context);
-	}
-	
+	void SendKey(WORD virtualKey) const;
+	void RepeatKey(WORD virtualKey, int repetitions) const;
+
+	void ToggleUiFocus() const;
+	void ClickClient(const POINT& clickPosition) const;
 	/*
 
-	POINT GetWelcomePosition();
 	POINT GetInGameMenuPosition();
 	POINT GetHealthBarPosition();
 

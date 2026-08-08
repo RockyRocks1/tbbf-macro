@@ -1,3 +1,4 @@
+#pragma once
 #include <macro/IMacroManager.h>
 #include <roblox/RobloxWeb.h>
 #include <roblox/RobloxLauncher.h>
@@ -17,7 +18,6 @@ public:
 	void Stop() override;
 
 	bool LaunchMacroInstance(const MacroInstanceLaunchInfo& launchInfo) override;
-	
 	bool TerminateMacroInstance(int instanceIndex) override;
 
 	inline size_t GetActiveInstanceCount() const {

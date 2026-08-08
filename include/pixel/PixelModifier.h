@@ -16,11 +16,11 @@ private:
 	static bool Map1to1(const FrameView& sourceView, FrameBuffer& destBuffer, Func iteratorFunction);
 public:	
 	PixelModifier() = delete;
+	// TODO: maybe use Rect for the parameter type?
 	static FrameView Crop(const FrameView& sourceView, int x, int y, int width, int height);
-
 
 	static bool Grayscale(const FrameView& sourceView, FrameBuffer& destBuffer);
 	static bool Invert(const FrameView& sourceView, FrameBuffer& destBuffer);
 	static bool Threshold(const FrameView& sourceView, FrameBuffer& destBuffer, uint8_t thresholdVal, ThresholdType thresholdType);
-
+	static bool Censor(const FrameView& sourceView, FrameBuffer& destBuffer, int censorX, int censorY, int censorWidth, int censorHeight);
 };

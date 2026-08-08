@@ -80,8 +80,12 @@ add_executable(${PROJECT_NAME}
     src/utils/ProcessUtils.cpp
     src/tbbf/TbbfMacroManager.cpp
     src/tbbf/TbbfMacroInstance.cpp
+    src/tbbf/TbbfMacroBehavior.cpp
     src/tbbf/DisconnectBehavior.cpp
     src/tbbf/GameLoadedBehavior.cpp
+    src/tbbf/CentralContextBehavior.cpp
+    src/tbbf/VoteMenuBehavior.cpp
+    src/tbbf/TowerListBehavior.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include

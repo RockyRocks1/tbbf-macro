@@ -1,23 +1,19 @@
 #pragma once
 #include <pixel/FrameView.h>
+#include "IContext.h"
 
 class IMacroInstance;
 
 enum class TickStatus {
-    Handled,    // Action taken, skip all other behaviors after waiting;
-    Skipped,    // No action taken, skip this behavior;
-    Yield,      // No action taken, skip all other behaviors after waiting;
-    Terminated, // Action taken, terminate the macro instance;
-};
-
-struct TickResult {
-    TickStatus status = TickStatus::Skipped;
-    int waitTimeMs = 16;
+    Skipped,    // Skip this behavior;
+    Yield,      // Skip all other behaviors after waiting;
+    Terminated, // Terminate the macro instance immediately;
 };
 
 class IMacroBehavior {
 public:
-	virtual ~IMacroBehavior() = default;
-
-	virtual TickResult OnTick(IMacroInstance* instance, const FrameView& currentFrame) = 0;
+    virtual ~IMacroBehavior() = default;
+    virtual bool CanTick(uint64_t currentTimestampMs) const = 0;
+    virtual void UpdateLastTickTime(uint64_t tickTime) = 0;
+    virtual TickStatus Tick(IMacroInstance* instance, IContext* context, const FrameView& frame) = 0;
 };

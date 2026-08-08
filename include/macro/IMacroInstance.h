@@ -10,5 +10,10 @@ public:
 
 	virtual bool Initialize(std::unique_ptr<RobloxGame> game) = 0;
 	
-	virtual void* GetCustomContext() = 0;
+	virtual void SendKey(WORD virtualKey) const = 0;
+	virtual void RepeatKey(WORD virtualKey, int repetitions) const = 0;
+
+	virtual void ToggleUiFocus() const = 0;
+	virtual void ClickClient(const POINT& clickPosition) const = 0;
+	
 };

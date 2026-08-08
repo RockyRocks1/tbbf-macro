@@ -5,9 +5,11 @@
 
 class TbbfMacroInstance;
 
-class DisconnectBehavior : public TbbfMacroBehavior {
+class CentralContextBehavior : public TbbfMacroBehavior {
+private:
+	SplashTextStatus GetSplashTextStatus(TbbfMacroInstance* instance, const FrameView& currentFrame);
 protected:
 	TickStatus TickTbbf(TbbfMacroInstance* instance, TbbfCustomContext* context, const FrameView& currentFrame) override;
 public:
-	DisconnectBehavior() : TbbfMacroBehavior(16) {}
+	CentralContextBehavior() : TbbfMacroBehavior(16) {};
 };

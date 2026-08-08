@@ -4,6 +4,9 @@
 RobloxGame::RobloxGame(HWND hwnd, PixelCaptureMode captureMode): m_hwnd(hwnd), m_captureMode(captureMode) {
 	UpdateClientBounds();
 };
+RobloxGame::~RobloxGame() {
+	CloseWindow(m_hwnd);
+};
 std::unique_ptr<RobloxGame> RobloxGame::FromHwnd(HWND hwnd, PixelCaptureMode captureMode) {
 	if (!WindowUtils::IsMainWindow(hwnd))
 		return nullptr;
@@ -30,6 +33,10 @@ std::unique_ptr<RobloxGame> RobloxGame::FromProcessId(DWORD processId, PixelCapt
 		return nullptr;
 
 	return RobloxGame::FromHwnd(mainWindowHwnd, captureMode);
+}
+void RobloxGame::SetFocus() const {
+	if (GetForegroundWindow() != m_hwnd)
+		SetForegroundWindow(m_hwnd);
 }
 FrameView RobloxGame::GetLatestFrame() const {
 	if (!m_pixelCapture)

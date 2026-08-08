@@ -65,3 +65,40 @@ std::optional<POINT> WindowUtils::GetClientOffsetFromWgc(HWND hwnd) {
     offset.y -= wgcRect.top;
     return offset;
 }
+
+bool WindowUtils::SetAspectRatio(HWND hwnd, int targetWidth, AspectRatio ratio) {
+    if (!hwnd || !IsWindow(hwnd))
+        return false;
+
+    double targetAspectRatio;
+    switch (ratio) {
+    case AspectRatio::Widescreen:
+        targetAspectRatio = 16.0 / 9.0;
+        break;
+    case AspectRatio::StandardDefinition:
+    default:
+        targetAspectRatio = 4.0 / 3.0;
+        break;
+    }
+    int targetHeight = static_cast<int>(std::round(targetWidth / targetAspectRatio));
+
+    RECT rcClient, rcWindow;
+    GetClientRect(hwnd, &rcClient);
+    GetWindowRect(hwnd, &rcWindow);
+
+    int borderWidth = (rcWindow.right - rcWindow.left) - rcClient.right;
+    int borderHeight = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
+
+    return MoveWindow(hwnd, rcWindow.left, rcWindow.top, targetWidth + borderWidth, targetHeight + borderHeight, TRUE);
+}
+
+
+std::optional<POINT> WindowUtils::ToAbsoluteCoordinates(const POINT& screenPosition) {
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    int normalX = (screenPosition.x * 65535) / screenWidth;
+    int normalY = (screenPosition.y * 65535) / screenHeight;
+    if (normalX > 65535 || normalY > 65535)
+        return std::nullopt;
+    return POINT{ normalX, normalY };
+}

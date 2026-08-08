@@ -22,14 +22,18 @@ private:
 
     bool UpdateClientBounds() const;
 public:
-    ~RobloxGame() = default;
+    ~RobloxGame();
     static std::unique_ptr<RobloxGame> FromHwnd(HWND hwnd, PixelCaptureMode captureMode = PixelCaptureMode::WGC);
     static std::unique_ptr<RobloxGame> FromProcessId(DWORD processId, PixelCaptureMode captureMode = PixelCaptureMode::WGC);
 
     FrameView GetLatestFrame() const;
-    void SetFocus();
+    void SetFocus() const;
     
+
+
     inline HWND GetHwnd() const { return m_hwnd; }
     inline bool WinExists() const { return WindowUtils::IsMainWindow(m_hwnd); }
     inline const Size2D& GetClientBounds() const { return m_clientBounds; };
+
+
 };

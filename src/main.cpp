@@ -22,7 +22,7 @@ int main() {
         };
         TbbfMacroManager manager;
         manager.LaunchMacroInstance(launchInfo);
-        Sleep(100000);
+        Sleep(10000000);
     }
     curl_global_cleanup();
 

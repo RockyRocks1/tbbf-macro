@@ -137,3 +137,33 @@ bool PixelModifier::Threshold(const FrameView& sourceView, FrameBuffer& destBuff
 		return false;
 	};
 }
+
+bool PixelModifier::Censor(const FrameView& sourceView, FrameBuffer& destBuffer, int censorX, int censorY, int censorWidth, int censorHeight) {
+	if (censorWidth <= 0 || censorHeight <= 0 || censorX + censorWidth > sourceView.width || censorY + censorHeight > sourceView.height)
+		return false;
+	if (sourceView.format != PixelFormat::Gray8)
+		return false;
+	
+	const size_t vectorSize = sourceView.GetBufferSize();
+
+	destBuffer.data.resize(vectorSize);
+	destBuffer.width = sourceView.width;
+	destBuffer.height = sourceView.height;
+	destBuffer.format = sourceView.format;
+	destBuffer.stride = sourceView.stride;
+
+	for (int y = 0; y < sourceView.height; y++) {
+		const uint8_t* pSourceRow = static_cast<const uint8_t*>(sourceView.data.get() + sourceView.stride * y);
+		uint8_t* pDestRow = destBuffer.data.data() + destBuffer.stride * y;
+
+		const uint8_t* pSourcePixel = pSourceRow;
+		uint8_t* pDestPixel = pDestRow;
+		for (int x = 0; x < sourceView.width; x++) {
+			bool shouldCensor = x >= censorX && x < censorX + censorWidth && y >= censorY && y < censorY + censorHeight;
+			*pDestPixel = (shouldCensor) ? 0 : *pSourcePixel;
+			pSourcePixel++;
+			pDestPixel++;
+		}
+	}
+	return true;
+}
