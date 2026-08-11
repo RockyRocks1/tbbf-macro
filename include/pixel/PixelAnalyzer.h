@@ -17,5 +17,6 @@ public:
 	static std::optional<int> FindPixelOccurrences(const FrameView& frame, ColorRgba targetColor, int variation = 0);
 	static std::optional<POINT> BitmapSearch(const FrameView& frame, const FrameView& targetFrame);
 
+	static std::optional<uint8_t> GetSaturation(const FrameView& frame, const POINT& coords);
 	static std::optional<uint8_t> GetMaxLuminance(const FrameView& grayscaleFrame);
 };

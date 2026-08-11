@@ -167,3 +167,32 @@ bool PixelModifier::Censor(const FrameView& sourceView, FrameBuffer& destBuffer,
 	}
 	return true;
 }
+
+bool PixelModifier::Upscale(const FrameView& sourceView, FrameBuffer& destBuffer, int scaleFactor) {
+	if (scaleFactor <= 0)
+		return false;
+	if (sourceView.format != PixelFormat::Gray8)
+		return false;
+
+	destBuffer.width = sourceView.width * scaleFactor;
+	destBuffer.height = sourceView.height * scaleFactor;
+	destBuffer.format = sourceView.format;
+
+	const size_t newStride = FrameBuffer::GetOptimalStride(destBuffer.width);
+	const size_t vectorSize = newStride * destBuffer.height;
+
+	destBuffer.data.resize(vectorSize);
+	destBuffer.stride = newStride;
+	for (int y = 0; y < destBuffer.height; y++) {
+		const uint8_t* pSourceRow = static_cast<const uint8_t*>(sourceView.data.get() + sourceView.stride * (y / scaleFactor));
+		uint8_t* pDestRow = destBuffer.data.data() + destBuffer.stride * y;
+
+		uint8_t* pDestPixel = pDestRow;
+		for (int x = 0; x < destBuffer.width; x++) {
+			const uint8_t pSourcePixel = pSourceRow[x / scaleFactor];
+			*pDestPixel = pSourcePixel;
+			pDestPixel++;
+		}
+	}
+	return true;
+}

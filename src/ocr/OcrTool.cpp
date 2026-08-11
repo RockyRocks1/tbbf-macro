@@ -50,5 +50,17 @@ std::string OcrTool::RecognizeText(const FrameView& frameView) {
 
 	winrt::Windows::Media::Ocr::OcrResult result = engine.RecognizeAsync(bitmap).get();
 
-	return winrt::to_string(result.Text());
+	try {
+		winrt::Windows::Media::Ocr::OcrResult result{ nullptr };
+
+		winrt::Windows::System::Threading::ThreadPool::RunAsync([&](auto&&) {
+			result = engine.RecognizeAsync(bitmap).get();
+			}).get(); 
+		if (result) 
+			return winrt::to_string(result.Text());
+		
+	}
+	catch (winrt::hresult_error const&) {}
+
+	return "";
 };

@@ -14,6 +14,6 @@ public:
 	virtual void RepeatKey(WORD virtualKey, int repetitions) const = 0;
 
 	virtual void ToggleUiFocus() const = 0;
-	virtual void ClickClient(const POINT& clickPosition) const = 0;
+	virtual void ClickClient(const POINT& clickPosition, uint64_t holdTime) const = 0;
 	
 };

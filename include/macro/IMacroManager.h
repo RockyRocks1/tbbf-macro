@@ -10,6 +10,7 @@ public:
     virtual void Stop() = 0;
         
     virtual bool LaunchMacroInstance(const MacroInstanceLaunchInfo& launchInfo) = 0;
+    virtual bool LaunchMacroInstance(HWND hwnd, const MacroInstanceLaunchInfo& launchInfo) = 0;
     virtual bool TerminateMacroInstance(int instanceIndex) = 0;
 
     virtual size_t GetActiveInstanceCount() const = 0;

@@ -27,7 +27,6 @@ void VoteMenuBehavior::VoteBlockyCastle(TbbfMacroInstance* instance, const Frame
 	instance->SendKey(VK_DOWN);
 	instance->ToggleUiFocus();
 
-
 	instance->ToggleUiFocus();
 	instance->SendKey(VK_DOWN);
 
@@ -51,7 +50,6 @@ void VoteMenuBehavior::VoteGamemode(TbbfMacroInstance* instance, const FrameView
 	instance->SendKey(VK_DOWN);
 	instance->ToggleUiFocus();
 
-
 	instance->ToggleUiFocus();
 	instance->SendKey(VK_DOWN);
 
@@ -60,17 +58,12 @@ void VoteMenuBehavior::VoteGamemode(TbbfMacroInstance* instance, const FrameView
 	instance->ToggleUiFocus();
 }
 
-
-
-
-
-
 TickStatus VoteMenuBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustomContext* context, const FrameView& currentFrame) {
 	if (context->voteStatus == VoteStatus::Finished)
 		return TickStatus::Skipped;
 	
 	if (context->splashStatus == SplashTextStatus::Welcome) {
-		context->voteStatus == VoteStatus::Finished;
+		context->voteStatus = VoteStatus::Finished;
 		return TickStatus::Yield;
 	}
 	if (context->splashStatus == SplashTextStatus::Unknown) {
@@ -93,7 +86,7 @@ TickStatus VoteMenuBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustomCon
 			m_debounceMs += 20000;
 		break;
 	case VoteStatus::GamemodeVote:
-		VoteGamemode(instance, currentFrame, Gamemode::Classic);
+		VoteGamemode(instance, currentFrame, Gamemode::Hardmode);
 		context->voteStatus = VoteStatus::Waiting;
 		m_debounceMs = 5000;
 		if (skipVoteButton)

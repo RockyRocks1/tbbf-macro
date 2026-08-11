@@ -5,7 +5,10 @@
 #include "CentralContextBehavior.h"
 #include "VoteMenuBehavior.h"
 #include "TowerListBehavior.h"
-
+#include "RespawnBehavior.h"
+#include "WaveChangedBehavior.h"
+#include "TowerSelectBehavior.h"
+#include "AttackBehavior.h"
 
 class TbbfMacroInstance : public IMacroInstance {
 private:
@@ -24,17 +27,7 @@ public:
 	void RepeatKey(WORD virtualKey, int repetitions) const;
 
 	void ToggleUiFocus() const;
-	void ClickClient(const POINT& clickPosition) const;
-	/*
+	void ClickClient(const POINT& clickPosition, uint64_t holdTime = 0) const;
 
-	POINT GetInGameMenuPosition();
-	POINT GetHealthBarPosition();
-
-	bool IsInMainMenu(const FrameView& currentFrame);
-	bool IsInSelectSpawnMenu(const FrameView& currentFrame);
-	bool IsDeployed(const FrameView& currentFrame);
-	bool HasTool(const FrameView& currentFrame);
-	bool IsGameOver(const FrameView& currentFrame);
-	bool IsTriumph(const FrameView& currentFrame);
-	*/
+	static uint64_t GetCurrentTimestamp();
 };

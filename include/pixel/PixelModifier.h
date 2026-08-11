@@ -23,4 +23,5 @@ public:
 	static bool Invert(const FrameView& sourceView, FrameBuffer& destBuffer);
 	static bool Threshold(const FrameView& sourceView, FrameBuffer& destBuffer, uint8_t thresholdVal, ThresholdType thresholdType);
 	static bool Censor(const FrameView& sourceView, FrameBuffer& destBuffer, int censorX, int censorY, int censorWidth, int censorHeight);
+	static bool Upscale(const FrameView& sourceView, FrameBuffer& destBuffer, int scaleFactor);
 };

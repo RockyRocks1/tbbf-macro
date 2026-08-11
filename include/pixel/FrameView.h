@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
+#include <fstream>
 #include <memory>
 
 struct ColorRgba;
@@ -125,3 +126,86 @@ struct FrameBuffer {
     }
 };
 
+inline bool SaveFrameViewToBmp(const FrameView& frame, const std::string& filename) {
+    if (frame.data == nullptr || frame.width <= 0 || frame.height <= 0) {
+        return false;
+    }
+
+    // BMP rows must be padded to a multiple of 4 bytes
+    size_t targetRowSize = (frame.width * frame.GetBytesPerPixel() + 3) & ~3;
+    size_t pixelDataSize = targetRowSize * frame.height;
+    size_t fileHeaderSize = 14;
+    size_t infoHeaderSize = 40;
+    size_t fileSize = fileHeaderSize + infoHeaderSize + pixelDataSize;
+
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) return false;
+
+    // 1. BITMAPFILEHEADER (14 bytes)
+    uint8_t fileHeader[14] = {
+        'B', 'M',                           // Signature
+        static_cast<uint8_t>(fileSize),     // File size (bytes 2-5)
+        static_cast<uint8_t>(fileSize >> 8),
+        static_cast<uint8_t>(fileSize >> 16),
+        static_cast<uint8_t>(fileSize >> 24),
+        0, 0,                               // Reserved
+        0, 0,                               // Reserved
+        static_cast<uint8_t>(fileHeaderSize + infoHeaderSize), 0, 0, 0 // Offset to pixel data
+    };
+    file.write(reinterpret_cast<char*>(fileHeader), sizeof(fileHeader));
+
+    // 2. BITMAPINFOHEADER (40 bytes)
+    uint8_t bpp = (frame.format == PixelFormat::Gray8) ? 8 : 32;
+    uint32_t imgWidth = frame.width;
+    uint32_t imgHeight = frame.height;
+    uint32_t imgImageSize = static_cast<uint32_t>(pixelDataSize);
+
+    uint8_t infoHeader[40] = {
+        40, 0, 0, 0,                        // Header size
+        static_cast<uint8_t>(imgWidth),     // Width
+        static_cast<uint8_t>(imgWidth >> 8),
+        static_cast<uint8_t>(imgWidth >> 16),
+        static_cast<uint8_t>(imgWidth >> 24),
+        static_cast<uint8_t>(imgHeight),    // Height (positive = bottom-up)
+        static_cast<uint8_t>(imgHeight >> 8),
+        static_cast<uint8_t>(imgHeight >> 16),
+        static_cast<uint8_t>(imgHeight >> 24),
+        1, 0,                               // Planes
+        bpp, 0,                             // Bits per pixel
+        0, 0, 0, 0,                         // Compression (0 = none)
+        static_cast<uint8_t>(imgImageSize), // Image size
+        static_cast<uint8_t>(imgImageSize >> 8),
+        static_cast<uint8_t>(imgImageSize >> 16),
+        static_cast<uint8_t>(imgImageSize >> 24),
+        0x13, 0x0B, 0, 0,                   // X pixels per meter (2835)
+        0x13, 0x0B, 0, 0,                   // Y pixels per meter (2835)
+        0, 0, 0, 0,                         // Colors used
+        0, 0, 0, 0                          // Important colors
+    };
+    file.write(reinterpret_cast<char*>(infoHeader), sizeof(infoHeader));
+
+    // Grayscale palette (if Gray8, write 256 grayscale entries)
+    if (frame.format == PixelFormat::Gray8) {
+        for (int i = 0; i < 256; ++i) {
+            uint8_t paletteEntry[4] = { static_cast<uint8_t>(i), static_cast<uint8_t>(i), static_cast<uint8_t>(i), 0 };
+            file.write(reinterpret_cast<char*>(paletteEntry), 4);
+        }
+    }
+
+    // 3. Pixel Data (BMP expects bottom-up row order)
+    std::vector<uint8_t> paddingBuffer(targetRowSize, 0);
+    const uint8_t* srcPixels = frame.data.get();
+
+    for (int y = frame.height - 1; y >= 0; --y) {
+        const uint8_t* srcRow = srcPixels + (y * frame.stride);
+        file.write(reinterpret_cast<const char*>(srcRow), frame.width * frame.GetBytesPerPixel());
+
+        // Write row padding bytes if necessary
+        size_t currentPadding = targetRowSize - (frame.width * frame.GetBytesPerPixel());
+        if (currentPadding > 0) {
+            file.write(reinterpret_cast<char*>(paddingBuffer.data()), currentPadding);
+        }
+    }
+
+    return true;
+}

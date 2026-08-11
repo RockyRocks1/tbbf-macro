@@ -101,3 +101,16 @@ std::optional<uint8_t> PixelAnalyzer::GetMaxLuminance(const FrameView& grayscale
 	}
 	return maxLuminance;
 }
+std::optional<uint8_t> PixelAnalyzer::GetSaturation(const FrameView& frame, const POINT& coords) {
+	std::optional<ColorRgba> pixelColor = PixelAnalyzer::GetPixelColor(frame, coords);
+	if (!pixelColor)
+		return std::nullopt;
+
+	uint8_t maxChannel = (std::max)({ pixelColor->r, pixelColor->g, pixelColor->b });
+	uint8_t minChannel = (std::min)({ pixelColor->r, pixelColor->g, pixelColor->b });
+
+	if (maxChannel == 0)
+		return 0;
+	
+	return static_cast<uint8_t>((static_cast<int>(maxChannel - minChannel) * 255) / maxChannel);
+}

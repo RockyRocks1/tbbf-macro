@@ -34,7 +34,7 @@ bool TowerListBehavior::PassedThicknessCheck(const FrameView& frame, int x, int 
 }
 
 std::optional<const Rect> TowerListBehavior::FindNavBoxWithinTowerList(const FrameView& currentFrame) {
-    static constexpr Size2D maxSize{ 200, 90 };
+    static constexpr Size2D maxSize{ 200, 95 };
     static constexpr Size2D minSize{ 120, 80 };
 
     const int classlistMaxX = static_cast<int>(currentFrame.width * 0.25f);
@@ -91,8 +91,8 @@ std::optional<const Rect> TowerListBehavior::FindNavBoxWithinTowerList(const Fra
 std::string TowerListBehavior::ReadTextWithinNavBox(const FrameView& currentFrame, const Rect& navBox) {
     static constexpr int blueFadePadding = 4;
     static constexpr int luminanceOffset = 50;
-    static constexpr UDim2 towerLimitUDim2(0.87f, 0, 0.f, 10);
-    static constexpr Size2D towerLimitSize{ 30, 20 };
+    static constexpr UDim2 towerLimitUDim2(0.86f, 0, 0.f, 10);
+    static constexpr Size2D towerLimitSize{ 28, 20 };
     int cropX = navBox.x + uiStrokeWidth + blueFadePadding;
     int cropY = navBox.y + uiStrokeWidth + blueFadePadding;
     int cropWidth = navBox.width - ((uiStrokeWidth + blueFadePadding) * 2);
@@ -126,16 +126,14 @@ void TowerListBehavior::ProcessTowerListReading(TbbfMacroInstance* instance, Tbb
         return;
     }
 
+    instance->SendKey(VK_DOWN);
     std::string towerName = ReadTextWithinNavBox(currentFrame, *navBox);
     if (towerName.find("Enforcer") != std::string::npos) {
         info.enforcerIndex = info.currentReadIndex;
-        std::cout << "Enforcer index: " << info.currentReadIndex << std::endl;
     }
-    else if (towerName.find("Void") != std::string::npos) {
+    else if (towerName.find("Void") != std::string::npos || towerName.find("void") != std::string::npos) {
         info.voidTraitorIndex = info.currentReadIndex;
-        std::cout << "Void Traitor index: " << info.currentReadIndex << std::endl;
     }
-    instance->SendKey(VK_DOWN);
     info.currentReadIndex++;
 }
 
@@ -147,10 +145,11 @@ TickStatus TowerListBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustomCo
     case TowerListStatus::Uninitialized:
         context->towerListInfo.status = TowerListStatus::Reading;
         CalibrateStart(instance);
-        m_debounceMs = 100;
+        m_debounceMs = 500;
         return TickStatus::Yield;
     case TowerListStatus::Reading:
         ProcessTowerListReading(instance, context, currentFrame);
+        context->playerStatus = PlayerStatus::Menu;
         return TickStatus::Yield;
     default:
         break;

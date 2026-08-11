@@ -14,14 +14,11 @@ int main() {
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
     {
-        MacroInstanceLaunchInfo launchInfo = {
-            .robloSecurity = "...",
-            .gameId = 5977347869,
-            .privateServerAccessCode = "...",
-            .gamePath = "C:\\Users\\...\\AppData\\Local\\Roblox\\Versions\\version-d584fb6c717a43d9\\RobloxPlayerBeta.exe",
-        };
+        HANDLE hMutex = CreateMutexA(NULL, TRUE, "ROBLOX_singletonEvent");
+
+        
         TbbfMacroManager manager;
-        manager.LaunchMacroInstance(launchInfo);
+        manager.LaunchMacroInstance(launchInfoAlt);
         Sleep(10000000);
     }
     curl_global_cleanup();

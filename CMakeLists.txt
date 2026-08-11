@@ -86,6 +86,10 @@ add_executable(${PROJECT_NAME}
     src/tbbf/CentralContextBehavior.cpp
     src/tbbf/VoteMenuBehavior.cpp
     src/tbbf/TowerListBehavior.cpp
+    src/tbbf/RespawnBehavior.cpp
+    src/tbbf/WaveChangedBehavior.cpp
+    src/tbbf/TowerSelectBehavior.cpp
+    src/tbbf/AttackBehavior.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include
