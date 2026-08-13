@@ -18,7 +18,8 @@ TickStatus AttackBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustomConte
 		instance->SendKey(0x31);
 		context->toolEquipped = true;
 	}
-	instance->ClickClient(POINT{ currentFrame.width / 2, currentFrame.height / 2 - 10 }, 50);
-
+	instance->ClickClient(POINT{ currentFrame.width / 2, currentFrame.height / 2 - 10 }, 10);
+	if (context->waveNumber > 36)
+		instance->SendKey(0x47);
 	return TickStatus::Skipped;
 }

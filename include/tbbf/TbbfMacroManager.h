@@ -7,12 +7,13 @@
 
 class TbbfMacroManager : IMacroManager {
 private:
-	bool m_isRunning = false;
+	std::atomic<bool> m_isRunning{ false };
 	std::mutex m_instancesMutex;
 	std::vector<std::unique_ptr<IMacroInstance>> m_instances;
 	std::vector<std::jthread> m_launchThreads;
+	std::jthread m_managerThread;
 
-	void LinkMacroInstance(HWND hwnd, const MacroInstanceLaunchInfo& launchInfo);
+	void PerformManagerLoop();
 	void CreateMacroInstance(const MacroInstanceLaunchInfo& launchInfo);
 	void CreateMacroInstance(HWND hwnd, const MacroInstanceLaunchInfo& launchInfo);
 public:

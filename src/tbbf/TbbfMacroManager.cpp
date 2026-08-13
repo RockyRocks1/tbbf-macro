@@ -1,12 +1,50 @@
 #include <tbbf/TbbfMacroManager.h>
 
 bool TbbfMacroManager::Start() {
-	m_isRunning = true;
+	if (m_isRunning.load())
+		return true;
+	m_isRunning.store(true);
+	
+	m_managerThread = std::jthread([this]() {
+		this->PerformManagerLoop();
+	});
+
 	return true;
 }
 void TbbfMacroManager::Stop() {
-	m_isRunning = false;
+	m_isRunning.store(false);
 }
+
+void TbbfMacroManager::PerformManagerLoop() {
+	while (m_isRunning.load()) {
+		std::vector<TbbfMacroInstance*> activeInstances;
+		{
+			std::lock_guard<std::mutex> lock(m_instancesMutex);
+			for (const auto& instance : m_instances) {
+				if (!instance)
+					continue;
+
+				TbbfMacroInstance* tbbfInstance = static_cast<TbbfMacroInstance*>(instance.get());
+				if (tbbfInstance && tbbfInstance->IsRunning()) {
+					activeInstances.push_back(tbbfInstance);
+				}
+			}
+		}
+
+		if (activeInstances.empty()) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			continue;
+		}
+
+		for (TbbfMacroInstance* instance : activeInstances) {
+			if (!m_isRunning.load())
+				break;
+			instance->Tick();
+			std::this_thread::sleep_for(std::chrono::milliseconds(16));
+		}
+	}
+}
+
 
 void TbbfMacroManager::CreateMacroInstance(HWND hwnd, const MacroInstanceLaunchInfo& launchInfo) {
 	std::unique_ptr<RobloxGame> game = RobloxGame::FromHwnd(hwnd);

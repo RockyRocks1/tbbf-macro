@@ -35,8 +35,10 @@ std::unique_ptr<RobloxGame> RobloxGame::FromProcessId(DWORD processId, PixelCapt
 	return RobloxGame::FromHwnd(mainWindowHwnd, captureMode);
 }
 void RobloxGame::SetFocus() const {
-	if (GetForegroundWindow() != m_hwnd)
+	if (GetForegroundWindow() != m_hwnd) {
 		SetForegroundWindow(m_hwnd);
+		ShowWindow(m_hwnd, SW_RESTORE);
+	}
 }
 FrameView RobloxGame::GetLatestFrame() const {
 	if (!m_pixelCapture)
@@ -60,8 +62,8 @@ FrameView RobloxGame::GetLatestFrame() const {
 	}
 	if (!clientOffset) 
 		return {};
-
-	return PixelModifier::Crop(fullFrame, clientOffset->x, clientOffset->y, m_clientBounds.width, m_clientBounds.height);
+	const Rect clientRegion{ clientOffset->x, clientOffset->y, m_clientBounds.width, m_clientBounds.height };
+	return PixelModifier::Crop(fullFrame, clientRegion);
 }
 bool RobloxGame::UpdateClientBounds() const {
 	if (!WinExists()) {

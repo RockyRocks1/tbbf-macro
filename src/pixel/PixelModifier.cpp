@@ -25,16 +25,16 @@ bool PixelModifier::Map1to1(const FrameView& sourceView, FrameBuffer& destBuffer
 	return true;
 }
 
-FrameView PixelModifier::Crop(const FrameView& sourceView, int x, int y, int width, int height) {
-	if (width <= 0 || height <= 0 || x + width > sourceView.width || y + height > sourceView.height)
+FrameView PixelModifier::Crop(const FrameView& sourceView, const Rect& cropRegion) {
+	if (cropRegion.width <= 0 || cropRegion.height <= 0 || cropRegion.x + cropRegion.width > sourceView.width || cropRegion.y + cropRegion.height > sourceView.height)
 		return {};
-	size_t byteOffset = (static_cast<size_t>(y) * sourceView.stride) + (static_cast<size_t>(x) * sourceView.GetBytesPerPixel());
+	size_t byteOffset = (static_cast<size_t>(cropRegion.y) * sourceView.stride) + (static_cast<size_t>(cropRegion.x) * sourceView.GetBytesPerPixel());
 	std::shared_ptr<const uint8_t[]> croppedData(sourceView.data, sourceView.data.get() + byteOffset);
 
 	return FrameView{
 		.data = croppedData,
-		.width = width,
-		.height = height,
+		.width = cropRegion.width,
+		.height = cropRegion.height,
 		.stride = sourceView.stride,
 		.format = sourceView.format
 	};
@@ -138,8 +138,8 @@ bool PixelModifier::Threshold(const FrameView& sourceView, FrameBuffer& destBuff
 	};
 }
 
-bool PixelModifier::Censor(const FrameView& sourceView, FrameBuffer& destBuffer, int censorX, int censorY, int censorWidth, int censorHeight) {
-	if (censorWidth <= 0 || censorHeight <= 0 || censorX + censorWidth > sourceView.width || censorY + censorHeight > sourceView.height)
+bool PixelModifier::Censor(const FrameView& sourceView, FrameBuffer& destBuffer, const Rect& censorRegion) {
+	if (censorRegion.width <= 0 || censorRegion.height <= 0 || censorRegion.x + censorRegion.width > sourceView.width || censorRegion.y + censorRegion.height > sourceView.height)
 		return false;
 	if (sourceView.format != PixelFormat::Gray8)
 		return false;
@@ -152,6 +152,10 @@ bool PixelModifier::Censor(const FrameView& sourceView, FrameBuffer& destBuffer,
 	destBuffer.format = sourceView.format;
 	destBuffer.stride = sourceView.stride;
 
+
+	const int censorRight = censorRegion.x + censorRegion.width;
+	const int censorBottom = censorRegion.y + censorRegion.height;
+
 	for (int y = 0; y < sourceView.height; y++) {
 		const uint8_t* pSourceRow = static_cast<const uint8_t*>(sourceView.data.get() + sourceView.stride * y);
 		uint8_t* pDestRow = destBuffer.data.data() + destBuffer.stride * y;
@@ -159,7 +163,7 @@ bool PixelModifier::Censor(const FrameView& sourceView, FrameBuffer& destBuffer,
 		const uint8_t* pSourcePixel = pSourceRow;
 		uint8_t* pDestPixel = pDestRow;
 		for (int x = 0; x < sourceView.width; x++) {
-			bool shouldCensor = x >= censorX && x < censorX + censorWidth && y >= censorY && y < censorY + censorHeight;
+			bool shouldCensor = x >= censorRegion.x && x < censorRight && y >= censorRegion.y && y < censorBottom;
 			*pDestPixel = (shouldCensor) ? 0 : *pSourcePixel;
 			pSourcePixel++;
 			pDestPixel++;
@@ -195,4 +199,53 @@ bool PixelModifier::Upscale(const FrameView& sourceView, FrameBuffer& destBuffer
 		}
 	}
 	return true;
+}
+
+bool PixelModifier::Normalize(const FrameView& sourceView, FrameBuffer& destBuffer, const Rect& ignoreRegion) {
+	if (sourceView.format != PixelFormat::Gray8)
+		return false;
+
+	const size_t vectorSize = sourceView.GetBufferSize();
+
+	destBuffer.data.resize(vectorSize);
+	destBuffer.width = sourceView.width;
+	destBuffer.height = sourceView.height;
+	destBuffer.format = sourceView.format;
+	destBuffer.stride = sourceView.stride;
+
+	const int ignoreRight = ignoreRegion.x + ignoreRegion.width;
+	const int ignoreBottom = ignoreRegion.y + ignoreRegion.height;
+
+	uint8_t minVal = 255;
+	uint8_t maxVal = 0;
+	for (int y = 0; y < sourceView.height; y++) {
+		const uint8_t* pRow = sourceView.data.get() + (sourceView.stride * y);
+		const bool isRowInsideIgnoreZone = (y >= ignoreRegion.y && y < ignoreBottom);
+
+		for (int x = 0; x < sourceView.width; x++) {
+			if (isRowInsideIgnoreZone && x >= ignoreRegion.x && x < ignoreRight)
+				continue;
+			
+			if (pRow[x] < minVal)
+				minVal = pRow[x];
+			if (pRow[x] > maxVal)
+				maxVal = pRow[x];
+		}
+	}
+
+	if (maxVal == minVal)
+		return false;
+
+	const float scale = 255.0f / (maxVal - minVal);
+	uint8_t lookUpTable[256] = {};
+	
+	for (int i = 0; i < 256; i++) {
+		float normalized = (i - minVal) * scale;
+		lookUpTable[i] = static_cast<uint8_t>(std::clamp(normalized, 0.0f, 255.0f));
+	}
+
+	auto normalize = [lookUpTable](const uint8_t* src, uint8_t* dest) {
+		*dest = lookUpTable[*src];
+		};
+	return Map1to1(sourceView, destBuffer, normalize);
 }

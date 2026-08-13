@@ -18,6 +18,9 @@ bool TowerListBehavior::PassedThicknessCheck(const FrameView& frame, int x, int 
     int currentThickness = 0;
     int currentX = x;
     int currentY = y;
+    std::optional<ColorRgba> previousPixel = PixelAnalyzer::GetPixelColor(frame, POINT{ currentX - stepX, currentY - stepY });
+    if (!previousPixel || *previousPixel == WHITE)
+        return false;
     while (true) {
         std::optional<ColorRgba> pixel = PixelAnalyzer::GetPixelColor(frame, POINT{ currentX, currentY });
         if (!pixel)
@@ -89,32 +92,38 @@ std::optional<const Rect> TowerListBehavior::FindNavBoxWithinTowerList(const Fra
     return std::nullopt;
 }
 std::string TowerListBehavior::ReadTextWithinNavBox(const FrameView& currentFrame, const Rect& navBox) {
+    static int i = 0;
     static constexpr int blueFadePadding = 4;
-    static constexpr int luminanceOffset = 50;
     static constexpr UDim2 towerLimitUDim2(0.86f, 0, 0.f, 10);
-    static constexpr Size2D towerLimitSize{ 28, 20 };
-    int cropX = navBox.x + uiStrokeWidth + blueFadePadding;
-    int cropY = navBox.y + uiStrokeWidth + blueFadePadding;
-    int cropWidth = navBox.width - ((uiStrokeWidth + blueFadePadding) * 2);
-    int cropHeight = navBox.height - ((uiStrokeWidth + blueFadePadding) * 2);
-
-    const FrameView crop = PixelModifier::Crop(currentFrame, cropX, cropY, cropWidth, cropHeight);
-
+    static constexpr Size2D towerLimitSize{ 26, 16 };
+    const Rect cropRegion = {
+        navBox.x + uiStrokeWidth + blueFadePadding,
+        navBox.y + uiStrokeWidth + blueFadePadding,
+        navBox.width - ((uiStrokeWidth + blueFadePadding) * 2),
+        navBox.height - ((uiStrokeWidth + blueFadePadding) * 2)
+    };
+    const POINT towerLimitPosition = towerLimitUDim2.Resolve(Size2D{ cropRegion.width, cropRegion.height });
+    const Rect towerLimitRegion{
+        towerLimitPosition.x - towerLimitSize.width / 2,
+        towerLimitPosition.y - towerLimitSize.height / 2,
+        towerLimitSize.width,
+        towerLimitSize.height
+    };
+    const FrameView crop = PixelModifier::Crop(currentFrame, cropRegion);
     FrameBuffer grayscaleBuffer;
     PixelModifier::Grayscale(crop, grayscaleBuffer);
     const FrameView grayscale = grayscaleBuffer.GetView();
-
-    POINT towerLimitPosition = towerLimitUDim2.Resolve(Size2D{ crop.width, crop.height });
     FrameBuffer censorBuffer;
-    PixelModifier::Censor(grayscale, censorBuffer, towerLimitPosition.x - towerLimitSize.width / 2, towerLimitPosition.y - towerLimitSize.height / 2, towerLimitSize.width, towerLimitSize.height);
+    PixelModifier::Censor(grayscale, censorBuffer, towerLimitRegion);
     const FrameView censor = censorBuffer.GetView();
-   
-    std::optional<uint8_t> maxLuminance = PixelAnalyzer::GetMaxLuminance(censor);
-    if (!maxLuminance)
-        return "";
-    FrameBuffer thresholdBuffer;
-    PixelModifier::Threshold(censor, thresholdBuffer, *maxLuminance - luminanceOffset, ThresholdType::BINARY);
-    std::string result = OcrTool::RecognizeText(thresholdBuffer.GetView());
+    FrameBuffer normalizeBuffer;
+    PixelModifier::Normalize(censor, normalizeBuffer, towerLimitRegion);
+    const FrameView normalize = normalizeBuffer.GetView();
+    FrameBuffer upscaleBuffer;
+    PixelModifier::Upscale(normalize, upscaleBuffer, 2);
+    std::string result = OcrTool::RecognizeText(upscaleBuffer.GetView());
+    SaveFrameViewToBmp(upscaleBuffer.GetView(), std::format("{}_-_{}.bmp", i, result));
+    i++;
     return result;
 }
 void TowerListBehavior::ProcessTowerListReading(TbbfMacroInstance* instance, TbbfCustomContext* context, const FrameView& currentFrame) {

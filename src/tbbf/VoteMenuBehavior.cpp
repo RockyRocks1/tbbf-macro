@@ -3,16 +3,19 @@
 
 std::optional<POINT> VoteMenuBehavior::FindSkipVote(const FrameView& frame) {
 	static constexpr UDim2 skipVoteUDimPosition = UDim2(1.0f, -50, 1.0f, -75);
-	static constexpr UDim2 skipVoteUDimSize = UDim2(0.f, 50, 0.f, 25);
+	static constexpr Size2D skipVoteSize{ 50, 25 };
 	static constexpr ColorRgba targetWhiteColor = { 255, 255, 255 };
 
 	const Size2D frameSize{ frame.width, frame.height };
 
 	const POINT buttonPosition = skipVoteUDimPosition.Resolve(frameSize);
-	const POINT buttonSize = skipVoteUDimSize.Resolve(frameSize);
-	const POINT leftTopPosition{ buttonPosition.x - buttonSize.x / 2, buttonPosition.y - buttonSize.y / 2 };
-	
-	const FrameView& skipVoteCropped = PixelModifier::Crop(frame, leftTopPosition.x, leftTopPosition.y, buttonSize.x, buttonSize.y);
+	const Rect skipVoteBounds{
+		buttonPosition.x - skipVoteSize.width / 2,
+		buttonPosition.y - skipVoteSize.width / 2,
+		skipVoteSize.width,
+		skipVoteSize.height
+	};
+	const FrameView& skipVoteCropped = PixelModifier::Crop(frame, skipVoteBounds);
 	std::optional<int> whitePixels = PixelAnalyzer::FindPixelOccurrences(skipVoteCropped, targetWhiteColor);
 
 	if (!whitePixels || *whitePixels < 100)
@@ -80,7 +83,7 @@ TickStatus VoteMenuBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustomCon
 		VoteBlockyCastle(instance, currentFrame);
 		context->voteStatus = VoteStatus::GamemodeVote;
 		m_debounceMs = 8000;
-		if (skipVoteButton)
+		if (skipVoteButton && false)
 			instance->ClickClient(*skipVoteButton);
 		else
 			m_debounceMs += 20000;
@@ -89,7 +92,7 @@ TickStatus VoteMenuBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustomCon
 		VoteGamemode(instance, currentFrame, Gamemode::Hardmode);
 		context->voteStatus = VoteStatus::Waiting;
 		m_debounceMs = 5000;
-		if (skipVoteButton)
+		if (skipVoteButton && false)
 			instance->ClickClient(*skipVoteButton);
 		else
 			m_debounceMs += 20000;

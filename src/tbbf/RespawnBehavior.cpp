@@ -12,7 +12,6 @@ void RespawnBehavior::OpenMenu(TbbfMacroInstance* instance, TbbfCustomContext* c
 }
 void RespawnBehavior::SpamSpawnIn(TbbfMacroInstance* instance, TbbfCustomContext* context) {
 	instance->SendKey(VK_RETURN);
-	instance->SendKey(VK_SPACE);
 	instance->ClickClient(context->spawnPosition, 16);
 }
 TickStatus RespawnBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustomContext* context, const FrameView& currentFrame) {

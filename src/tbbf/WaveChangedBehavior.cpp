@@ -42,8 +42,7 @@ TickStatus WaveChangedBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCustom
 	if (context->playerStatus != PlayerStatus::Deployed)
 		return TickStatus::Skipped;
 
-	Rect waveTextBounds = context->uiLayout.waveTextBounds;
-	FrameView croppedWaveText = PixelModifier::Crop(currentFrame, waveTextBounds.x, waveTextBounds.y, waveTextBounds.width, waveTextBounds.height);
+	FrameView croppedWaveText = PixelModifier::Crop(currentFrame, context->uiLayout.waveTextBounds);
 	if (!croppedWaveText.data)
 		return TickStatus::Skipped;
 

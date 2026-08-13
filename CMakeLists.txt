@@ -90,6 +90,7 @@ add_executable(${PROJECT_NAME}
     src/tbbf/WaveChangedBehavior.cpp
     src/tbbf/TowerSelectBehavior.cpp
     src/tbbf/AttackBehavior.cpp
+    src/tbbf/UpgradeBehavior.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include

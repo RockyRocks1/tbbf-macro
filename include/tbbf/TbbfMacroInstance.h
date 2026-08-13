@@ -9,20 +9,23 @@
 #include "WaveChangedBehavior.h"
 #include "TowerSelectBehavior.h"
 #include "AttackBehavior.h"
+#include "UpgradeBehavior.h"
 
 class TbbfMacroInstance : public IMacroInstance {
 private:
-	std::jthread m_thread;
 	std::unique_ptr<RobloxGame> m_game;
 	std::unique_ptr<TbbfCustomContext> m_context;
 	std::vector<std::unique_ptr<IMacroBehavior>> m_behaviors;
-	std::atomic<bool> m_isLoopRunning{ false };
-	void PerformMainLoop();
+	std::atomic<bool> m_isRunning{ false };
 public:
 	TbbfMacroInstance() = default;
 	~TbbfMacroInstance() override = default;
 
 	bool Initialize(std::unique_ptr<RobloxGame> game) override;
+	void Tick() override;
+	inline bool IsRunning() {
+		return m_isRunning.load();
+	}
 	void SendKey(WORD virtualKey) const;
 	void RepeatKey(WORD virtualKey, int repetitions) const;
 

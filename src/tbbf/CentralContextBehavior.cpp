@@ -34,8 +34,13 @@ SplashTextStatus CentralContextBehavior::GetSplashTextStatus(TbbfMacroInstance* 
     static constexpr Size2D splashTextSize = { 240, 50 };
 
     POINT startPos = splashTextStartUDim2.Resolve(Size2D{currentFrame.width, currentFrame.height});
-
-    FrameView cropped = PixelModifier::Crop(currentFrame, startPos.x, startPos.y, splashTextSize.width, splashTextSize.height);
+    Rect splashTextBounds{
+        startPos.x,
+        startPos.y,
+        splashTextSize.width,
+        splashTextSize.height
+    };
+    FrameView cropped = PixelModifier::Crop(currentFrame, splashTextBounds);
     std::optional<int> pixelOccurences = PixelAnalyzer::FindPixelOccurrences(cropped, splashTextColor);
     
     if (!pixelOccurences)
@@ -94,7 +99,14 @@ bool CentralContextBehavior::IsDeployed(const FrameView& currentFrame, const Rec
     static constexpr ColorRgba mainBarColor{ 0xDC, 0xCD, 00 };
     static constexpr ColorRgba barBackColor{ 0x41, 0x3D, 00 };
     static constexpr int variation = 3;
-    FrameView expBarFrame = PixelModifier::Crop(currentFrame, expBarBounds.x + 1, expBarBounds.y, expBarBounds.width, currentFrame.height - expBarBounds.y - 1);
+
+    const Rect searchRegion{
+        expBarBounds.x + 1,
+        expBarBounds.y,
+        expBarBounds.width,
+        currentFrame.height - expBarBounds.y - 1
+    };
+    FrameView expBarFrame = PixelModifier::Crop(currentFrame, searchRegion);
 
     if (expBarFrame.data == nullptr)
         return false;
