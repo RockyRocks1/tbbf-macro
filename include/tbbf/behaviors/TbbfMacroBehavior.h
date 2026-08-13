@@ -3,7 +3,7 @@
 
 
 class TbbfMacroInstance;
-struct TbbfCustomContext;
+struct TbbfContext;
 
 class TbbfMacroBehavior : public BaseMacroBehavior {
 public:
@@ -12,5 +12,5 @@ public:
     TickStatus Tick(IMacroInstance* instance, IContext* context, const FrameView& currentFrame) final;
 
 protected:
-    virtual TickStatus TickTbbf(TbbfMacroInstance* instance, TbbfCustomContext* context, const FrameView& currentFrame) = 0;
+    virtual TickStatus TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) = 0;
 };

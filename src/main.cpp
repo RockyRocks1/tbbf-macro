@@ -17,7 +17,6 @@ int main() {
         HWND roblox = FindWindowA(nullptr, "Roblox");
         SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
         HANDLE hMutex = CreateMutexA(NULL, TRUE, "ROBLOX_singletonEvent");
-
         MacroInstanceLaunchInfo launchInfoAlt = {};
         TbbfMacroManager manager;
         manager.LaunchMacroInstance(roblox, launchInfoAlt);

@@ -1,20 +1,20 @@
 #include <macro/IMacroInstance.h>
-#include "TbbfCustomContext.h"
-#include "DisconnectBehavior.h"
-#include "GameLoadedBehavior.h"
-#include "CentralContextBehavior.h"
-#include "VoteMenuBehavior.h"
-#include "TowerListBehavior.h"
-#include "RespawnBehavior.h"
-#include "WaveChangedBehavior.h"
-#include "TowerSelectBehavior.h"
-#include "AttackBehavior.h"
-#include "UpgradeBehavior.h"
+#include <tbbf/context/TbbfContext.h>
+#include <tbbf/behaviors/CentralContextBehavior.h> 
+#include <tbbf/behaviors/MainDecisionBehavior.h>
+#include <tbbf/behaviors/ShutdownBehavior.h>
+#include <tbbf/behaviors/GameLoadedBehavior.h>
+#include <tbbf/behaviors/VoteMenuBehavior.h>
+#include <tbbf/behaviors/TowerListBehavior.h>
+#include <tbbf/behaviors/RespawnBehavior.h>
+#include <tbbf/behaviors/TowerSelectBehavior.h>
+#include <tbbf/behaviors/AttackBehavior.h>
+#include <tbbf/behaviors/UpgradeBehavior.h>
 
 class TbbfMacroInstance : public IMacroInstance {
 private:
 	std::unique_ptr<RobloxGame> m_game;
-	std::unique_ptr<TbbfCustomContext> m_context;
+	std::unique_ptr<TbbfContext> m_context;
 	std::vector<std::unique_ptr<IMacroBehavior>> m_behaviors;
 	std::atomic<bool> m_isRunning{ false };
 public:
