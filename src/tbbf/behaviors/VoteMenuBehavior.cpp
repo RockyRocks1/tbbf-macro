@@ -43,17 +43,20 @@ TickStatus VoteMenuBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* 
 	switch (context->decisions.currentTask) {
 	case TbbfMacroTask::Vote_SubmittingMap:
 		VoteBlockyCastle(instance);
+		if (context->uiLayout.skipVoteButtonPos)
+			instance->ClickClient(*context->uiLayout.skipVoteButtonPos);
 		context->decisions.lastExecutedTask = TbbfMacroTask::Vote_SubmittingMap;
-
 		m_debounceMs = 500;
 		return TickStatus::Yield;
 	case TbbfMacroTask::Vote_SubmittingGamemode:
 		VoteGamemode(instance, TargetGamemode::Classic);
+		if (context->uiLayout.skipVoteButtonPos)
+			instance->ClickClient(*context->uiLayout.skipVoteButtonPos);
 		context->decisions.lastExecutedTask = TbbfMacroTask::Vote_SubmittingGamemode;
-
 		m_debounceMs = 500;
 		return TickStatus::Yield;
 	case TbbfMacroTask::Vote_WaitingForMatch:
+	case TbbfMacroTask::Vote_WaitForLoad:
 		return TickStatus::Yield;
 	default:
 		return TickStatus::Skipped;

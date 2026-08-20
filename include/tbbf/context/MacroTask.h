@@ -5,6 +5,7 @@ enum class TbbfMacroTask {
 	Shutdown,
 	Game_WaitForLoad,
 	
+	Vote_WaitForLoad,
 	Vote_SubmittingMap,
 	Vote_SubmittingGamemode,
 	Vote_WaitingForMatch,
@@ -17,5 +18,7 @@ enum class TbbfMacroTask {
 	TowerSelect_Equipping,
 
 	Respawn_GoToMenu,
-	Respawn_SpamSpawn
+	Respawn_Spawning,
+
+	Combat
 };

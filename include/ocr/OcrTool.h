@@ -12,7 +12,9 @@
 // Warning: this tool is relatively slow, use sparingly!
 class OcrTool {
 public:
-	inline static const winrt::Windows::Media::Ocr::OcrEngine engine =
-		winrt::Windows::Media::Ocr::OcrEngine::TryCreateFromUserProfileLanguages();
+	inline static const winrt::Windows::Media::Ocr::OcrEngine engine = winrt::Windows::Media::Ocr::OcrEngine::TryCreateFromUserProfileLanguages();
 	static std::string RecognizeText(const FrameView& frameView);
+	static std::string FindClosestMatch(const std::string& srcStr, const std::vector<std::string>& targetStrs);
+private:
+	static int GetLevenshteinDistance(std::string_view srcStr, std::string_view destStr);
 };

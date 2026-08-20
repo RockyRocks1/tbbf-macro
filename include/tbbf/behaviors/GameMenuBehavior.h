@@ -4,12 +4,11 @@
 
 class TbbfMacroInstance;
 
-class RespawnBehavior : public TbbfMacroBehavior {
+class GameMenuBehavior : public TbbfMacroBehavior {
 private:
-	void GoToMenu(TbbfMacroInstance* instance, TbbfContext* context);
-	void SpawnIn(TbbfMacroInstance* instance, TbbfContext* context);
+	void OpenMenu(TbbfMacroInstance* instance, TbbfContext* context);
 protected:
 	TickStatus TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) override;
 public:
-	RespawnBehavior() : TbbfMacroBehavior(16) {};
+	GameMenuBehavior() : TbbfMacroBehavior(16) {};
 };

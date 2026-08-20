@@ -64,3 +64,52 @@ std::string OcrTool::RecognizeText(const FrameView& frameView) {
 
 	return "";
 };
+
+int OcrTool::GetLevenshteinDistance(std::string_view srcStr, std::string_view destStr) {
+	const size_t srcStrLength = srcStr.length();
+	const size_t destStrLength = destStr.length();
+
+	if (srcStrLength == 0)
+		return static_cast<int>(destStrLength);
+	if (destStrLength == 0)
+		return static_cast<int>(srcStrLength);
+
+
+	std::vector<int> dp(destStrLength + 1, 0);
+
+	for (size_t j = 0; j <= destStrLength; j++)
+		dp[j] = static_cast<int>(j);
+
+
+	for (size_t i = 1; i <= srcStrLength; i++) {
+		int prevDiagonal = dp[0];
+		dp[0] = static_cast<int>(i);
+
+		for (size_t j = 1; j <= destStrLength; j++) {
+			const int nextDiagonal = dp[j];
+			const int cost = (srcStr[i - 1] == destStr[j - 1]) ? 0 : 1;
+
+			const int deletion = dp[j] + 1;
+			const int insertion = dp[j - 1] + 1;
+			const int subsitution = prevDiagonal + cost;
+
+			dp[j] = (std::min)({ deletion, insertion, subsitution });
+			prevDiagonal = nextDiagonal;
+		}
+	}
+
+	return dp[destStrLength];
+}
+
+std::string OcrTool::FindClosestMatch(const std::string& srcStr, const std::vector<std::string>& targetStrs) {
+	int closestDistance = MAXINT;
+	std::string closestMatch;
+	for (const std::string& targetStr : targetStrs) {
+		int distance = GetLevenshteinDistance(srcStr, targetStr);
+		if (distance >= closestDistance)
+			continue;
+		closestDistance = distance;
+		closestMatch = targetStr;
+	}
+	return closestMatch;
+}

@@ -1,6 +1,8 @@
 #pragma once
 #include <pixel/UDim2.h>
-#include <pixel/FrameView.h>
+#include <pixel/PixelAnalyzer.h>
+#include <pixel/PixelModifier.h>
+#include <ocr/OcrTool.h>
 
 class WaveTextReader {
 public:

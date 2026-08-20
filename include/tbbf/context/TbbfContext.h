@@ -1,7 +1,7 @@
 #pragma once
 #include <macro/IContext.h>
 #include <macro/IMacroInstance.h>
-#include "MacroTask.h"
+#include <tbbf/context/MacroTask.h>
 #include <unordered_map>
 
 enum class TowerListStatus {
@@ -42,6 +42,7 @@ struct TbbfContext : public IContext {
 		Rect expBarBounds{ 0, 0, 0, 0 };
 		Rect bossHealthBarBounds{ 0, 0, 0, 0 };
 		Rect waveTextBounds{ 0, 0, 0, 0 };
+		std::optional<POINT> skipVoteButtonPos = std::nullopt;
 		bool HasResized(const FrameView& frame) const noexcept {
 			return viewportSize.width != frame.width || viewportSize.height != frame.height;
 		}
@@ -61,22 +62,26 @@ struct TbbfContext : public IContext {
 
 	struct TimestampInfo {
 		uint64_t lastRespawnTick = 0;
+		uint64_t lastWaveReadTick = 0;
 		uint64_t lastWaveChangedTick = 0;
-		uint64_t nextOcrAllowedTick = 0;
+		uint64_t lastToolEquippedTick = 0;
 		uint64_t nextVoteActionTick = 0;
 	} timestamps{};
 
 	struct ToolInfo {
 		bool exists = false;
 		bool isActive = false;
-		uint64_t lastEquippedTick = 0;
 	} tool{};
 
 	PlayerStatus playerStatus = PlayerStatus::Loading;
 	SplashTextStatus splashStatus = SplashTextStatus::Unknown;
 
 	int waveNumber = 0;
+	int lastProcessedWave = -1;
+	bool isInvincible = false;
 	bool isDisconnected = false;
+	bool isGameLoaded = false;
 	bool isBossPresent = false;
 	bool isMiniMenuActive = false;
+	
 };

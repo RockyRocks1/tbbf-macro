@@ -3,7 +3,9 @@
 #include <pixel/PixelAnalyzer.h>
 #include <array>
 
-class DisconnectReader {
+class GameLoadedReader {
 public:
-	static bool IsDisconnected(const FrameView& currentFrame) noexcept;
+	static bool IsGameLoaded(const FrameView& currentFrame) noexcept;
 };
+
+

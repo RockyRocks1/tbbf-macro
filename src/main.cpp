@@ -22,7 +22,13 @@ int main() {
         manager.LaunchMacroInstance(roblox, launchInfoAlt);
         manager.Start();
 
-        Sleep(10000000);
+        while (true) {
+            if (GetAsyncKeyState(VK_OEM_6) < 0)
+            {
+                manager.Stop();
+            }
+            Sleep(100);
+        }
     }
     curl_global_cleanup();
 

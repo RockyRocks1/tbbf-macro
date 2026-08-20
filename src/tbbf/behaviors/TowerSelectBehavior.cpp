@@ -2,7 +2,12 @@
 #include <tbbf/TbbfMacroInstance.h>
 
 void TowerSelectBehavior::SelectTower(TbbfMacroInstance* instance, TbbfContext* context) {
-	std::optional<int> towerIndex = context->towerList.GetTowerIndex("Fragger");
+	std::optional<int> towerIndex = std::nullopt;
+	if (context->waveNumber == 0)
+		towerIndex = context->towerList.GetTowerIndex("Enforcer");
+	else if (context->waveNumber == 14)
+		towerIndex = context->towerList.GetTowerIndex("Void Traitor");
+
 	if (!towerIndex)
 		return;
 
@@ -35,6 +40,7 @@ TickStatus TowerSelectBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContex
 		m_debounceMs = 400;
 		instance->SendKey(VK_SPACE);
 		context->decisions.lastExecutedTask = TbbfMacroTask::TowerSelect_Equipping;
+		context->lastProcessedWave = context->waveNumber;
 		return TickStatus::Yield;
 	default:
 		return TickStatus::Skipped;

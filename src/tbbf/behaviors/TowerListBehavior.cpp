@@ -1,5 +1,4 @@
 #include <tbbf/behaviors/TowerListBehavior.h>
-#include <tbbf/parsers/TowerListReader.h>
 #include <tbbf/TbbfMacroInstance.h>
 
 void TowerListBehavior::CalibrateStart(TbbfMacroInstance* instance) {
@@ -11,10 +10,19 @@ void TowerListBehavior::CalibrateStart(TbbfMacroInstance* instance) {
 }
 
 void TowerListBehavior::ProcessTowerListReading(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
-    std::optional<const Rect> navBox = TowerListReader::FindNavBoxWithinTowerList(currentFrame);
     TbbfContext::TowerListInfo& info = context->towerList;
-
-    if (!navBox) {
+    static const std::vector<std::string> towerList{
+        "Scout", "Sniper", "Fragger", "Shotgunner", "Cryo-Gunner", "Enforcer", "Patrioteer",
+        "Snowballer", "Tweeter", "Soldier", "Patrol", "Aviator", "Knifer",
+        "Doctor", "Tuber", "Elf", "Mercenary", "Golden Scout", "Barracks",
+        "Marksman", "Archer", "Engineer", "Flamethrower", "Commander",
+        "Plasma Trooper", "Mortar", "Commando", "Spiritual Advocate",
+        "Hallowboomer",
+        "Railgunner", "Void Traitor", "Phaser", "Golden Commando", "Zed", "Golden Zed"
+    }; // THIS IS TEMPORARY
+    std::optional<std::string> towerName = TowerListReader::IdentifyTower(currentFrame, towerList);
+    
+    if (!towerName) {
         info.status = TowerListStatus::Ready;
         instance->ToggleUiFocus();
         return;
@@ -22,10 +30,8 @@ void TowerListBehavior::ProcessTowerListReading(TbbfMacroInstance* instance, Tbb
 
     instance->SendKey(VK_DOWN);
 
-    std::string towerName = TowerListReader::ReadTextWithinNavBox(currentFrame, *navBox);
-
-    if (!towerName.empty())
-        info.registry[towerName] = info.currentReadIndex;
+    if (!towerName->empty())
+        info.registry[*towerName] = info.currentReadIndex;
 
     info.currentReadIndex++;
 }

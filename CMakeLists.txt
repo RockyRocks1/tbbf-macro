@@ -80,17 +80,26 @@ add_executable(${PROJECT_NAME}
     src/utils/ProcessUtils.cpp
     src/tbbf/TbbfMacroManager.cpp
     src/tbbf/TbbfMacroInstance.cpp
-    src/tbbf/TbbfMacroBehavior.cpp
-    src/tbbf/DisconnectBehavior.cpp
-    src/tbbf/GameLoadedBehavior.cpp
-    src/tbbf/CentralContextBehavior.cpp
-    src/tbbf/VoteMenuBehavior.cpp
-    src/tbbf/TowerListBehavior.cpp
-    src/tbbf/RespawnBehavior.cpp
-    src/tbbf/WaveChangedBehavior.cpp
-    src/tbbf/TowerSelectBehavior.cpp
-    src/tbbf/AttackBehavior.cpp
-    src/tbbf/UpgradeBehavior.cpp
+    src/tbbf/behaviors/TbbfMacroBehavior.cpp
+    src/tbbf/behaviors/CentralContextBehavior.cpp
+    src/tbbf/behaviors/MainDecisionBehavior.cpp
+    src/tbbf/behaviors/AttackBehavior.cpp
+    src/tbbf/behaviors/DisconnectBehavior.cpp
+    src/tbbf/behaviors/GameLoadedBehavior.cpp
+    src/tbbf/behaviors/GameMenuBehavior.cpp
+    src/tbbf/behaviors/RespawnBehavior.cpp
+    src/tbbf/behaviors/TowerListBehavior.cpp
+    src/tbbf/behaviors/TowerSelectBehavior.cpp
+    src/tbbf/behaviors/UpgradeBehavior.cpp
+    src/tbbf/behaviors/VoteMenuBehavior.cpp
+    src/tbbf/behaviors/ToolBehavior.cpp
+    src/tbbf/parsers/DisconnectReader.cpp
+    src/tbbf/parsers/GameLoadedReader.cpp
+    src/tbbf/parsers/ScreenStateReader.cpp
+    src/tbbf/parsers/TowerListReader.cpp
+    src/tbbf/parsers/VoteMenuReader.cpp
+    src/tbbf/parsers/WaveTextReader.cpp
+    src/tbbf/parsers/ToolSlotReader.cpp
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${wil_SOURCE_DIR}/include

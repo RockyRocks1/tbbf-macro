@@ -10,6 +10,8 @@
 #include <tbbf/behaviors/TowerSelectBehavior.h>
 #include <tbbf/behaviors/AttackBehavior.h>
 #include <tbbf/behaviors/UpgradeBehavior.h>
+#include <tbbf/behaviors/GameMenuBehavior.h>
+#include <tbbf/behaviors/ToolBehavior.h>
 
 class TbbfMacroInstance : public IMacroInstance {
 private:

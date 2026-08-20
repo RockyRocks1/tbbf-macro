@@ -1,6 +1,7 @@
 #pragma once
 #include <tbbf/behaviors/TbbfMacroBehavior.h>
 #include <tbbf/context/TbbfContext.h>
+#include <tbbf/parsers/TowerListReader.h>
 
 class TbbfMacroInstance;
 
