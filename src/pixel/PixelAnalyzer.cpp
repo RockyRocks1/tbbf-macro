@@ -84,7 +84,13 @@ std::optional<POINT> PixelAnalyzer::PixelSearchBackwards(const FrameView& frame,
 	}
 	return std::nullopt;
 }
-
+std::optional<uint8_t> PixelAnalyzer::GetLuminance(const FrameView& frame, const POINT& coords) {
+	std::optional<ColorRgba> pixelColor = PixelAnalyzer::GetPixelColor(frame, coords);
+	if (!pixelColor)
+		return std::nullopt;
+	
+	return (pixelColor->r * 54 + pixelColor->g * 183 + pixelColor->b * 18) >> 8;
+}
 std::optional<uint8_t> PixelAnalyzer::GetMaxLuminance(const FrameView& grayscaleFrame) {
 	if (!CheckSanityOfAnalysis(grayscaleFrame, std::nullopt, PixelFormat::Gray8))
 		return std::nullopt;

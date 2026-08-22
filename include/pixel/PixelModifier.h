@@ -1,6 +1,7 @@
 #pragma once
 #include "FrameView.h"
 #include <cmath>
+#include <algorithm>
 
 enum class ThresholdType {
 	BINARY,
@@ -17,11 +18,12 @@ private:
 public:	
 	PixelModifier() = delete;
 	// TODO: maybe use Rect for the parameter type?
-	static FrameView Crop(const FrameView& sourceView, int x, int y, int width, int height);
+	static FrameView Crop(const FrameView& sourceView, const Rect& cropRegion);
 
 	static bool Grayscale(const FrameView& sourceView, FrameBuffer& destBuffer);
 	static bool Invert(const FrameView& sourceView, FrameBuffer& destBuffer);
 	static bool Threshold(const FrameView& sourceView, FrameBuffer& destBuffer, uint8_t thresholdVal, ThresholdType thresholdType);
-	static bool Censor(const FrameView& sourceView, FrameBuffer& destBuffer, int censorX, int censorY, int censorWidth, int censorHeight);
+	static bool Censor(const FrameView& sourceView, FrameBuffer& destBuffer, const Rect& censorRegion);
 	static bool Upscale(const FrameView& sourceView, FrameBuffer& destBuffer, int scaleFactor);
+	static bool Normalize(const FrameView& sourceView, FrameBuffer& destBuffer, const Rect& ignoreRegion = Rect{});
 };

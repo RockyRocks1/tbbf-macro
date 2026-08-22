@@ -1,4 +1,5 @@
 #pragma once
+#include <utils/Rect.h>
 #include <stdint.h>
 #include <vector>
 #include <fstream>

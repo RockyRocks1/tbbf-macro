@@ -4,35 +4,31 @@ uint64_t TbbfMacroInstance::GetCurrentTimestamp() {
 	return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
-void TbbfMacroInstance::PerformMainLoop() {
-	while (m_isLoopRunning.load()) {
-		uint64_t currentTimestampMs = GetCurrentTimestamp();
-		if (!m_game || !m_game->WinExists()) {
-			m_isLoopRunning.store(false);
-			continue;
-		}
-		const FrameView latestFrame = m_game->GetLatestFrame();
-		if (!latestFrame.data) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(16));
-			continue;
-		}
+void TbbfMacroInstance::Tick() {
+	uint64_t currentTimestampMs = GetCurrentTimestamp();
+	if (!m_game || !m_game->WinExists()) {
+		m_isRunning.store(false);
+		return;
+	}
+	const FrameView latestFrame = m_game->GetLatestFrame();
+	if (!latestFrame.data)
+		return;
 
-		for (const auto& behavior : m_behaviors) {
-			if (!behavior->CanTick(currentTimestampMs))
-				continue;
+	for (const auto& behavior : m_behaviors) {
+		if (!behavior->CanTick(currentTimestampMs))
+			continue;
 
-			TickStatus status = behavior->Tick(this, m_context.get(), latestFrame);
-			behavior->UpdateLastTickTime(currentTimestampMs);
-			if (status == TickStatus::Terminated)
-				m_isLoopRunning.store(false);
-			if (status != TickStatus::Skipped) {
-				break;
-			}
-				
-			
+		TickStatus status = behavior->Tick(this, m_context.get(), latestFrame);
+		while (status == TickStatus::Redo)
+			status = behavior->Tick(this, m_context.get(), latestFrame);
+		if (status == TickStatus::Terminated) {
+			m_isRunning.store(false);
+			return;
 		}
-		
-		std::this_thread::sleep_for(std::chrono::milliseconds(16));
+		behavior->UpdateLastTickTime(currentTimestampMs);
+
+		if (status != TickStatus::Skipped)
+			break;
 	}
 }
 
@@ -40,28 +36,27 @@ bool TbbfMacroInstance::Initialize(std::unique_ptr<RobloxGame> game) {
 	if (!game)
 		return false;
 	m_game = std::move(game);
-	m_context = std::make_unique<TbbfCustomContext>();
-	// ORDER:
-	m_behaviors.push_back(std::make_unique<DisconnectBehavior>()); // THIS ONE MUST BE FIRST
-	m_behaviors.push_back(std::make_unique<GameLoadedBehavior>());
-	m_behaviors.push_back(std::make_unique<CentralContextBehavior>());
+	m_context = std::make_unique<TbbfContext>();
+	// these two below must be in this exact order
+	m_behaviors.push_back(std::make_unique<ContextBehavior>());
+	m_behaviors.push_back(std::make_unique<DecisionBehavior>());
+
+	m_behaviors.push_back(std::make_unique<ShutdownBehavior>());
 	m_behaviors.push_back(std::make_unique<VoteMenuBehavior>());
 	m_behaviors.push_back(std::make_unique<TowerListBehavior>());
 	m_behaviors.push_back(std::make_unique<TowerSelectBehavior>());
 	m_behaviors.push_back(std::make_unique<RespawnBehavior>());
-	m_behaviors.push_back(std::make_unique<WaveChangedBehavior>());
+	
+	m_behaviors.push_back(std::make_unique<GameMenuBehavior>());
+	m_behaviors.push_back(std::make_unique<UpgradeBehavior>());
+	m_behaviors.push_back(std::make_unique<ToolBehavior>());
 	m_behaviors.push_back(std::make_unique<AttackBehavior>());
+	m_behaviors.push_back(std::make_unique<DeployBehavior>());
 
-
-	m_isLoopRunning.store(true);
-	m_thread = std::jthread([this]() {
-		this->PerformMainLoop();
-	});
+	m_isRunning.store(true);
 	return true;
 }
-static std::mutex g_focusInputMutex;
 void TbbfMacroInstance::SendKey(WORD virtualKey) const {
-	std::lock_guard<std::mutex> lock(g_focusInputMutex);
 	m_game->SetFocus();
 	INPUT input{};
 	input.type = INPUT_KEYBOARD;
@@ -99,7 +94,6 @@ void TbbfMacroInstance::ClickClient(const POINT& clickPosition, uint64_t holdTim
 
 	if (!absolutePoint)
 		return;
-	std::lock_guard<std::mutex> lock(g_focusInputMutex);
 	m_game->SetFocus();
 	INPUT input{};
 	input.type = INPUT_MOUSE;

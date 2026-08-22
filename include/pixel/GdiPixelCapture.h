@@ -4,7 +4,7 @@
 #include <atomic>
 #include "IPixelCapture.h"
 
-
+// REFACTOR THIS LATER....
 class GdiPixelCapture : public IPixelCapture {
 private:
 	HWND m_targetHwnd = nullptr;
