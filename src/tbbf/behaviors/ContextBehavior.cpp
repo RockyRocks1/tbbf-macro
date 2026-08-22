@@ -1,7 +1,6 @@
-#include <tbbf/behaviors/CentralContextBehavior.h>
+#include <tbbf/behaviors/ContextBehavior.h>
 #include <tbbf/TbbfMacroInstance.h>
-
-TickStatus CentralContextBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
+TickStatus ContextBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
 
 	uint64_t currentTimestamp = instance->GetCurrentTimestamp();
 	context->isDisconnected = DisconnectReader::IsDisconnected(currentFrame);
@@ -36,14 +35,13 @@ TickStatus CentralContextBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfCon
 	context->playerStatus = ScreenStateReader::GetPlayerStatus(oldPlayerStatus, context->splashStatus, layoutInfo, context->isInvincible, currentFrame);
 	if (context->playerStatus == PlayerStatus::Deployed && context->playerStatus != oldPlayerStatus)
 		timestampInfo.lastRespawnTick = currentTimestamp;
-
 	context->isMiniMenuActive = ScreenStateReader::IsInGameMenuOpen(currentFrame, layoutInfo.expBarBounds);
 	static constexpr int waveReaderCooldown = 5000;
-	if (currentTimestamp - timestampInfo.lastWaveReadTick >= waveReaderCooldown && context->playerStatus == PlayerStatus::Deployed) {
+	if (currentTimestamp - timestampInfo.lastWaveReadTick >= waveReaderCooldown && context->playerStatus == PlayerStatus::Deployed && context->isMiniMenuActive) {
 		const int lastWaveNumber = context->waveNumber;
 
 		std::optional<int> currentWaveNumber = WaveTextReader::ReadFromFrame(currentFrame, layoutInfo.waveTextBounds);
-		if (currentWaveNumber && *currentWaveNumber != lastWaveNumber) {
+		if (currentWaveNumber && *currentWaveNumber != lastWaveNumber && *currentWaveNumber >= lastWaveNumber) {
 			context->waveNumber = *currentWaveNumber;
 			timestampInfo.lastWaveChangedTick = currentTimestamp;
 		}

@@ -82,20 +82,26 @@ PlayerStatus ScreenStateReader::GetPlayerStatus(PlayerStatus oldStatus, SplashTe
     return oldStatus;
 };
 bool ScreenStateReader::IsDead(const FrameView& currentFrame, const Rect& healthBarBounds) noexcept {
-    constexpr uint8_t aliveSaturationThreshold = 100;
-    int centerY = healthBarBounds.y + (healthBarBounds.height / 2);
-    const int startX = (healthBarBounds.x + healthBarBounds.width) - 5;
-    const int endX = healthBarBounds.x + 5;
+    const int centerY = healthBarBounds.y + (healthBarBounds.height / 2);
 
-    for (int x = startX; x >= endX; --x) {
-        uint8_t saturation = *PixelAnalyzer::GetSaturation(currentFrame, POINT{ x, centerY });
+    const int centerX = healthBarBounds.x + (healthBarBounds.width / 2);
+    POINT midPoint{ centerX, centerY };
 
-        if (saturation >= aliveSaturationThreshold)
-            return false;
-    }
+    uint8_t centerSaturation = *PixelAnalyzer::GetSaturation(currentFrame, midPoint);
+    uint8_t centerBrightness = *PixelAnalyzer::GetLuminance(currentFrame, midPoint);
 
-    return true;
-};
+
+    constexpr uint8_t minUiVisibleBrightness = 70;
+    if (centerBrightness < minUiVisibleBrightness)
+        return false;
+
+
+    const int leftX = healthBarBounds.x + 5;
+    uint8_t leftSaturation = *PixelAnalyzer::GetSaturation(currentFrame, POINT{ leftX, centerY });
+
+    constexpr uint8_t aliveSaturationThreshold = 130;
+    return leftSaturation < aliveSaturationThreshold;
+}
 bool ScreenStateReader::IsDeployed(const FrameView& currentFrame, const Rect& expBarBounds) noexcept {
     static constexpr ColorRgba mainBarColor{ 0xDC, 0xCD, 00 };
     static constexpr ColorRgba barBackColor{ 0x41, 0x3D, 00 };

@@ -1,9 +1,8 @@
 #include <macro/IMacroInstance.h>
 #include <tbbf/context/TbbfContext.h>
-#include <tbbf/behaviors/CentralContextBehavior.h> 
-#include <tbbf/behaviors/MainDecisionBehavior.h>
+#include <tbbf/behaviors/ContextBehavior.h> 
+#include <tbbf/behaviors/DecisionBehavior.h>
 #include <tbbf/behaviors/ShutdownBehavior.h>
-#include <tbbf/behaviors/GameLoadedBehavior.h>
 #include <tbbf/behaviors/VoteMenuBehavior.h>
 #include <tbbf/behaviors/TowerListBehavior.h>
 #include <tbbf/behaviors/RespawnBehavior.h>
@@ -12,6 +11,7 @@
 #include <tbbf/behaviors/UpgradeBehavior.h>
 #include <tbbf/behaviors/GameMenuBehavior.h>
 #include <tbbf/behaviors/ToolBehavior.h>
+#include <tbbf/behaviors/DeployBehavior.h>
 
 class TbbfMacroInstance : public IMacroInstance {
 private:

@@ -10,9 +10,9 @@
 
 class TbbfMacroInstance;
 
-class CentralContextBehavior : public TbbfMacroBehavior {
+class ContextBehavior : public TbbfMacroBehavior {
 protected:
 	TickStatus TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) override;
 public:
-	CentralContextBehavior() : TbbfMacroBehavior(16) {};
+	ContextBehavior() : TbbfMacroBehavior(16) {};
 };

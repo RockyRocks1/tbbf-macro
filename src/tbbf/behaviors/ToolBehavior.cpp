@@ -2,8 +2,9 @@
 #include <tbbf/TbbfMacroInstance.h>
 
 TickStatus ToolBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
+	TbbfContext::Decisions& decisions = context->decisions;
 	m_debounceMs = 16;
-	if (context->decisions.shouldEquipTool) {
+	if (decisions.shouldEquipTool) {
 		instance->SendKey(0x31);
 		m_debounceMs = 300;
 	}

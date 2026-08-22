@@ -11,21 +11,22 @@ void TbbfMacroInstance::Tick() {
 		return;
 	}
 	const FrameView latestFrame = m_game->GetLatestFrame();
-	if (!latestFrame.data) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(16));
+	if (!latestFrame.data)
 		return;
-	}
 
 	for (const auto& behavior : m_behaviors) {
 		if (!behavior->CanTick(currentTimestampMs))
 			continue;
 
 		TickStatus status = behavior->Tick(this, m_context.get(), latestFrame);
-		behavior->UpdateLastTickTime(currentTimestampMs);
+		while (status == TickStatus::Redo)
+			status = behavior->Tick(this, m_context.get(), latestFrame);
 		if (status == TickStatus::Terminated) {
 			m_isRunning.store(false);
 			return;
 		}
+		behavior->UpdateLastTickTime(currentTimestampMs);
+
 		if (status != TickStatus::Skipped)
 			break;
 	}
@@ -37,11 +38,10 @@ bool TbbfMacroInstance::Initialize(std::unique_ptr<RobloxGame> game) {
 	m_game = std::move(game);
 	m_context = std::make_unique<TbbfContext>();
 	// these two below must be in this exact order
-	m_behaviors.push_back(std::make_unique<CentralContextBehavior>());
-	m_behaviors.push_back(std::make_unique<MainDecisionBehavior>());
+	m_behaviors.push_back(std::make_unique<ContextBehavior>());
+	m_behaviors.push_back(std::make_unique<DecisionBehavior>());
 
 	m_behaviors.push_back(std::make_unique<ShutdownBehavior>());
-	m_behaviors.push_back(std::make_unique<GameLoadedBehavior>());
 	m_behaviors.push_back(std::make_unique<VoteMenuBehavior>());
 	m_behaviors.push_back(std::make_unique<TowerListBehavior>());
 	m_behaviors.push_back(std::make_unique<TowerSelectBehavior>());
@@ -51,7 +51,7 @@ bool TbbfMacroInstance::Initialize(std::unique_ptr<RobloxGame> game) {
 	m_behaviors.push_back(std::make_unique<UpgradeBehavior>());
 	m_behaviors.push_back(std::make_unique<ToolBehavior>());
 	m_behaviors.push_back(std::make_unique<AttackBehavior>());
-
+	m_behaviors.push_back(std::make_unique<DeployBehavior>());
 
 	m_isRunning.store(true);
 	return true;

@@ -5,7 +5,7 @@ RobloxGame::RobloxGame(HWND hwnd, PixelCaptureMode captureMode): m_hwnd(hwnd), m
 	UpdateClientBounds();
 };
 RobloxGame::~RobloxGame() {
-	CloseWindow(m_hwnd);
+	DestroyWindow(m_hwnd);
 };
 std::unique_ptr<RobloxGame> RobloxGame::FromHwnd(HWND hwnd, PixelCaptureMode captureMode) {
 	if (!WindowUtils::IsMainWindow(hwnd))

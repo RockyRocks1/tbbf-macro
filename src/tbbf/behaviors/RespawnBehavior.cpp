@@ -6,7 +6,7 @@ void RespawnBehavior::GoToMenu(TbbfMacroInstance* instance, TbbfContext* context
     switch (i) {
     case 0: {
         POINT clickPosition = { context->uiLayout.inGameMenuAnchor.x - 100, context->uiLayout.inGameMenuAnchor.y + 100 };
-        instance->ClickClient(clickPosition);
+        instance->ClickClient(clickPosition, 50);
         break;
     }
     case 1: {
@@ -23,27 +23,15 @@ void RespawnBehavior::GoToMenu(TbbfMacroInstance* instance, TbbfContext* context
         break;
     }
 }
-void RespawnBehavior::SpawnIn(TbbfMacroInstance* instance, TbbfContext* context) {
-	instance->SendKey(VK_RETURN);
-	instance->ClickClient(context->spawnPosition, 16);
-}
-TickStatus RespawnBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
-    if (context->decisions.currentTask == context->decisions.lastExecutedTask &&
-        context->decisions.currentTask != TbbfMacroTask::Respawn_Spawning)
-        return TickStatus::Skipped;
 
-    switch (context->decisions.currentTask) {
-    case TbbfMacroTask::Respawn_GoToMenu:
+TickStatus RespawnBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
+    m_debounceMs = 16;
+    if (context->decisions.commandGoToMenu) {
         GoToMenu(instance, context);
-        context->decisions.lastExecutedTask = TbbfMacroTask::Respawn_GoToMenu;
-        m_debounceMs = 500;
-        return TickStatus::Yield;
-    case TbbfMacroTask::Respawn_Spawning:
-        SpawnIn(instance, context);
-        context->decisions.lastExecutedTask = TbbfMacroTask::Respawn_Spawning;
-        m_debounceMs = 16;
+        m_debounceMs = 5000;
         return TickStatus::Skipped;
-    default:
-	    return TickStatus::Skipped;
     }
+   
+
+    return TickStatus::Skipped;
 }

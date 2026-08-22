@@ -38,25 +38,27 @@ void VoteMenuBehavior::VoteGamemode(TbbfMacroInstance* instance, TargetGamemode 
 	instance->ToggleUiFocus();
 }
 TickStatus VoteMenuBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
-	if (context->decisions.currentTask == context->decisions.lastExecutedTask)
+	TbbfContext::Decisions& decisions = context->decisions;
+	TbbfContext::BehaviorStatuses& statuses = context->statuses;
+
+	if (!decisions.commandVoteMenu)
 		return TickStatus::Skipped;
-	switch (context->decisions.currentTask) {
-	case TbbfMacroTask::Vote_SubmittingMap:
+
+	switch (statuses.voteMenu) {
+	case VoteMenuStatus::Idle:
+		statuses.voteMenu = VoteMenuStatus::VotingMap;
+		m_debounceMs = 4000;
+		return TickStatus::Yield;
+	case VoteMenuStatus::VotingMap:
 		VoteBlockyCastle(instance);
-		if (context->uiLayout.skipVoteButtonPos)
-			instance->ClickClient(*context->uiLayout.skipVoteButtonPos);
-		context->decisions.lastExecutedTask = TbbfMacroTask::Vote_SubmittingMap;
-		m_debounceMs = 500;
+		statuses.voteMenu = VoteMenuStatus::VotingGamemode;
+		m_debounceMs = 25000;
 		return TickStatus::Yield;
-	case TbbfMacroTask::Vote_SubmittingGamemode:
-		VoteGamemode(instance, TargetGamemode::Classic);
-		if (context->uiLayout.skipVoteButtonPos)
-			instance->ClickClient(*context->uiLayout.skipVoteButtonPos);
-		context->decisions.lastExecutedTask = TbbfMacroTask::Vote_SubmittingGamemode;
-		m_debounceMs = 500;
-		return TickStatus::Yield;
-	case TbbfMacroTask::Vote_WaitingForMatch:
-	case TbbfMacroTask::Vote_WaitForLoad:
+	case VoteMenuStatus::VotingGamemode:
+		VoteGamemode(instance, TargetGamemode::Hardmode);
+		decisions.isWaitingForMenu = true;
+		statuses.voteMenu = VoteMenuStatus::Idle;
+		m_debounceMs = 16;
 		return TickStatus::Yield;
 	default:
 		return TickStatus::Skipped;

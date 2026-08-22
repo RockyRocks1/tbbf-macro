@@ -1,12 +1,23 @@
 #pragma once
 #include <macro/IContext.h>
 #include <macro/IMacroInstance.h>
-#include <tbbf/context/MacroTask.h>
 #include <unordered_map>
 
 enum class TowerListStatus {
-	Pending,
+	Idle,
+	Reading,
 	Ready
+};
+enum class TowerSelectStatus {
+	Idle,
+	Selecting,
+	Buying,
+	Equipping
+};
+enum class VoteMenuStatus {
+	Idle,
+	VotingMap,
+	VotingGamemode
 };
 enum class SplashTextStatus {
 	Unknown,
@@ -25,13 +36,20 @@ enum class TargetGamemode {
 };
 struct TbbfContext : public IContext {
 	POINT spawnPosition{ 400, 400 };
-	struct TbbfMacroDecisions {
-		TbbfMacroTask currentTask = TbbfMacroTask::Idle;
-		TbbfMacroTask lastExecutedTask = TbbfMacroTask::Idle;
+	struct Decisions {
+		bool commandShutdown = false;
+		bool commandVoteMenu = false;
+		bool commandGoToMenu = false;
+		bool commandReadTowerList = false;
+		bool commandSelectTower = false;
+
 		bool shouldAttack = false;
 		bool shouldUpgrade = false;
 		bool shouldEquipTool = false;
 		bool shouldOpenMenu = false;
+		bool shouldDeploy = false;
+
+		bool isWaitingForMenu = false;
 	} decisions{};
 
 	struct UiLayoutInfo {
@@ -47,9 +65,12 @@ struct TbbfContext : public IContext {
 			return viewportSize.width != frame.width || viewportSize.height != frame.height;
 		}
 	} uiLayout{};
-
+	struct BehaviorStatuses {
+		TowerListStatus towerList = TowerListStatus::Idle;
+		TowerSelectStatus towerSelect = TowerSelectStatus::Idle;
+		VoteMenuStatus voteMenu = VoteMenuStatus::Idle;
+	} statuses;
 	struct TowerListInfo {
-		TowerListStatus status = TowerListStatus::Pending;
 		std::unordered_map<std::string, int> registry{};
 		int currentReadIndex = 0;
 		std::optional<int> GetTowerIndex(const std::string& towerName) const noexcept {
@@ -64,8 +85,6 @@ struct TbbfContext : public IContext {
 		uint64_t lastRespawnTick = 0;
 		uint64_t lastWaveReadTick = 0;
 		uint64_t lastWaveChangedTick = 0;
-		uint64_t lastToolEquippedTick = 0;
-		uint64_t nextVoteActionTick = 0;
 	} timestamps{};
 
 	struct ToolInfo {
@@ -76,12 +95,11 @@ struct TbbfContext : public IContext {
 	PlayerStatus playerStatus = PlayerStatus::Loading;
 	SplashTextStatus splashStatus = SplashTextStatus::Unknown;
 
-	int waveNumber = 0;
+	int waveNumber = -1;
 	int lastProcessedWave = -1;
 	bool isInvincible = false;
 	bool isDisconnected = false;
 	bool isGameLoaded = false;
 	bool isBossPresent = false;
 	bool isMiniMenuActive = false;
-	
 };

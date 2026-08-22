@@ -81,11 +81,10 @@ add_executable(${PROJECT_NAME}
     src/tbbf/TbbfMacroManager.cpp
     src/tbbf/TbbfMacroInstance.cpp
     src/tbbf/behaviors/TbbfMacroBehavior.cpp
-    src/tbbf/behaviors/CentralContextBehavior.cpp
-    src/tbbf/behaviors/MainDecisionBehavior.cpp
+    src/tbbf/behaviors/ContextBehavior.cpp
+    src/tbbf/behaviors/DecisionBehavior.cpp
     src/tbbf/behaviors/AttackBehavior.cpp
-    src/tbbf/behaviors/DisconnectBehavior.cpp
-    src/tbbf/behaviors/GameLoadedBehavior.cpp
+    src/tbbf/behaviors/ShutdownBehavior.cpp
     src/tbbf/behaviors/GameMenuBehavior.cpp
     src/tbbf/behaviors/RespawnBehavior.cpp
     src/tbbf/behaviors/TowerListBehavior.cpp
@@ -93,6 +92,7 @@ add_executable(${PROJECT_NAME}
     src/tbbf/behaviors/UpgradeBehavior.cpp
     src/tbbf/behaviors/VoteMenuBehavior.cpp
     src/tbbf/behaviors/ToolBehavior.cpp
+    src/tbbf/behaviors/DeployBehavior.cpp
     src/tbbf/parsers/DisconnectReader.cpp
     src/tbbf/parsers/GameLoadedReader.cpp
     src/tbbf/parsers/ScreenStateReader.cpp

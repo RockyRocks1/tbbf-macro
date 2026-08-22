@@ -8,7 +8,6 @@ bool TbbfMacroManager::Start() {
 	m_managerThread = std::jthread([this]() {
 		this->PerformManagerLoop();
 	});
-
 	return true;
 }
 void TbbfMacroManager::Stop() {
@@ -16,34 +15,56 @@ void TbbfMacroManager::Stop() {
 }
 
 void TbbfMacroManager::PerformManagerLoop() {
+	timeBeginPeriod(1);
+	HANDLE currentThreadHandle = ::GetCurrentThread();
+	::SetThreadPriority(currentThreadHandle, THREAD_PRIORITY_TIME_CRITICAL);
 	while (m_isRunning.load()) {
 		std::vector<TbbfMacroInstance*> activeInstances;
+		std::vector<size_t> deadInstancesIndices;
 		{
 			std::lock_guard<std::mutex> lock(m_instancesMutex);
-			for (const auto& instance : m_instances) {
-				if (!instance)
+			for (size_t i = 0; i < m_instances.size(); ++i) {
+				if (!m_instances[i].instance)
 					continue;
 
-				TbbfMacroInstance* tbbfInstance = static_cast<TbbfMacroInstance*>(instance.get());
-				if (tbbfInstance && tbbfInstance->IsRunning()) {
-					activeInstances.push_back(tbbfInstance);
-				}
+				TbbfMacroInstance* tbbfInstance = static_cast<TbbfMacroInstance*>(m_instances[i].instance.get());
+				if (!tbbfInstance)
+					continue;
+
+				if (!tbbfInstance->IsRunning()) {
+					deadInstancesIndices.push_back(i);
+					LaunchMacroInstance(m_instances[i].launchInfo);
+					continue;
+				}				
+				activeInstances.push_back(tbbfInstance);
+			}
+
+			for (auto it = deadInstancesIndices.rbegin(); it != deadInstancesIndices.rend(); ++it) {
+				m_instances.erase(m_instances.begin() + *it);
 			}
 		}
 
-		if (activeInstances.empty()) {
+		if (activeInstances.empty() && deadInstancesIndices.empty()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue;
 		}
-
+		auto frameStart = std::chrono::steady_clock::now();
 		for (TbbfMacroInstance* instance : activeInstances) {
 			if (!m_isRunning.load())
 				break;
 			instance->Tick();
-			std::this_thread::sleep_for(std::chrono::milliseconds(16));
 		}
+		auto frameEnd = std::chrono::steady_clock::now();
+
+		auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart);
+
+		/*if (elapsedTime < std::chrono::milliseconds(16) && m_isRunning.load())
+			std::this_thread::sleep_for(std::chrono::milliseconds(16) - elapsedTime);*/
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
+	timeEndPeriod(1);
 }
+
 
 
 void TbbfMacroManager::CreateMacroInstance(HWND hwnd, const MacroInstanceLaunchInfo& launchInfo) {
@@ -57,7 +78,10 @@ void TbbfMacroManager::CreateMacroInstance(HWND hwnd, const MacroInstanceLaunchI
 		return;
 	{
 		std::lock_guard<std::mutex> lock(m_instancesMutex);
-		m_instances.push_back(std::move(instance));
+		m_instances.push_back(MacroInstanceWrapper{
+			std::move(instance),
+			launchInfo 
+		});
 	}
 }
 void TbbfMacroManager::CreateMacroInstance(const MacroInstanceLaunchInfo& launchInfo) {
@@ -94,9 +118,10 @@ bool TbbfMacroManager::LaunchMacroInstance(HWND hwnd, const MacroInstanceLaunchI
 
 bool TbbfMacroManager::TerminateMacroInstance(int instanceIndex) {
 	std::lock_guard<std::mutex> lock(m_instancesMutex);
-	if (!m_instances.at(instanceIndex))
+	if (instanceIndex < 0 || instanceIndex >= static_cast<int>(m_instances.size())) 
 		return false;
 	
+
 	m_instances.erase(m_instances.begin() + instanceIndex);
 	return true;
 }

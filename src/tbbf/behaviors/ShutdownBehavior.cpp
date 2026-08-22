@@ -2,7 +2,8 @@
 #include <tbbf/TbbfMacroInstance.h>
 
 TickStatus ShutdownBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
-    if (context->decisions.currentTask == TbbfMacroTask::Shutdown)
+    TbbfContext::Decisions& decisions = context->decisions;
+    if (decisions.commandShutdown)
         return TickStatus::Terminated;
 
     return TickStatus::Skipped;

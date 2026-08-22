@@ -22,27 +22,33 @@ void TowerSelectBehavior::SelectTower(TbbfMacroInstance* instance, TbbfContext* 
 }
 
 TickStatus TowerSelectBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
-	if (context->decisions.currentTask == context->decisions.lastExecutedTask)
+	TbbfContext::Decisions& decisions = context->decisions;
+	TbbfContext::BehaviorStatuses& statuses = context->statuses;
+
+	if (!decisions.commandSelectTower) 
 		return TickStatus::Skipped;
 
-	switch (context->decisions.currentTask) {
-	case TbbfMacroTask::TowerSelect_Selecting:
-		m_debounceMs = 100;
+	switch (statuses.towerSelect) {
+	case TowerSelectStatus::Idle:
+		statuses.towerSelect = TowerSelectStatus::Selecting;
+		return TickStatus::Redo;
+	case TowerSelectStatus::Selecting:
 		SelectTower(instance, context);
-		context->decisions.lastExecutedTask = TbbfMacroTask::TowerSelect_Selecting;
+		statuses.towerSelect = TowerSelectStatus::Buying;
+		m_debounceMs = 100;
 		return TickStatus::Yield;
-	case TbbfMacroTask::TowerSelect_Buying:
-		m_debounceMs = 400;
+	case TowerSelectStatus::Buying:
 		instance->SendKey(VK_SPACE);
-		context->decisions.lastExecutedTask = TbbfMacroTask::TowerSelect_Buying;
+		statuses.towerSelect = TowerSelectStatus::Equipping;
+		m_debounceMs = 400;
 		return TickStatus::Yield;
-	case TbbfMacroTask::TowerSelect_Equipping:
-		m_debounceMs = 400;
+	case TowerSelectStatus::Equipping:
 		instance->SendKey(VK_SPACE);
-		context->decisions.lastExecutedTask = TbbfMacroTask::TowerSelect_Equipping;
+		statuses.towerSelect = TowerSelectStatus::Idle;
 		context->lastProcessedWave = context->waveNumber;
+		m_debounceMs = 400;
 		return TickStatus::Yield;
 	default:
 		return TickStatus::Skipped;
-	}
+	};
 }

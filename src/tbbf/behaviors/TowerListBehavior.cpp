@@ -11,19 +11,20 @@ void TowerListBehavior::CalibrateStart(TbbfMacroInstance* instance) {
 
 void TowerListBehavior::ProcessTowerListReading(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
     TbbfContext::TowerListInfo& info = context->towerList;
+    TbbfContext::BehaviorStatuses& statuses = context->statuses;
     static const std::vector<std::string> towerList{
-        "Scout", "Sniper", "Fragger", "Shotgunner", "Cryo-Gunner", "Enforcer", "Patrioteer",
-        "Snowballer", "Tweeter", "Soldier", "Patrol", "Aviator", "Knifer",
-        "Doctor", "Tuber", "Elf", "Mercenary", "Golden Scout", "Barracks",
-        "Marksman", "Archer", "Engineer", "Flamethrower", "Commander",
-        "Plasma Trooper", "Mortar", "Commando", "Spiritual Advocate",
-        "Hallowboomer",
-        "Railgunner", "Void Traitor", "Phaser", "Golden Commando", "Zed", "Golden Zed"
-    }; // THIS IS TEMPORARY
+        "Scout", "Sniper", "Fragger", "Shotgunner", "Cryo-Gunner", "Enforcer",
+        "Patrioteer", "Snowballer", "Tweeter", "Soldier", "Patrol", "Aviator", 
+        "Knifer", "Doctor", "Tuber", "Elf", "Mercenary", "Golden Scout", 
+        "Barracks", "Marksman", "Archer", "Engineer", "Flamethrower", "Commander",
+        "Plasma Trooper", "Mortar", "Commando", "Spiritual Advocate", "Hallowboomer",
+        "Exterminator", "Ice Apprentice", "Huntsman", "Railgunner", "Void Traitor", "Phaser",
+        "Golden Commando", "Zed", "Golden Zed"
+    }; // THIS IS TEMPORARY, MOVE TO JSON LATER
     std::optional<std::string> towerName = TowerListReader::IdentifyTower(currentFrame, towerList);
-    
+
     if (!towerName) {
-        info.status = TowerListStatus::Ready;
+        statuses.towerList = TowerListStatus::Ready;
         instance->ToggleUiFocus();
         return;
     }
@@ -37,26 +38,24 @@ void TowerListBehavior::ProcessTowerListReading(TbbfMacroInstance* instance, Tbb
 }
 
 TickStatus TowerListBehavior::TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) {
-    if (context->decisions.currentTask == context->decisions.lastExecutedTask &&
-        context->decisions.currentTask != TbbfMacroTask::TowerList_ReadingItem)
+    TbbfContext::Decisions& decisions = context->decisions;
+    TbbfContext::BehaviorStatuses& statuses = context->statuses;
+    TbbfContext::TowerListInfo& info = context->towerList;
+
+    if (!decisions.commandReadTowerList)
         return TickStatus::Skipped;
 
-    switch (context->decisions.currentTask) {
-    case TbbfMacroTask::TowerList_Initializing:
+    switch (statuses.towerList) {
+    case TowerListStatus::Idle:
         CalibrateStart(instance);
-
-        context->decisions.lastExecutedTask = TbbfMacroTask::TowerList_Initializing;
-
+        statuses.towerList = TowerListStatus::Reading;
         m_debounceMs = 500;
         return TickStatus::Yield;
-
-    case TbbfMacroTask::TowerList_ReadingItem:
-        m_debounceMs = 500;
+    case TowerListStatus::Reading:
         ProcessTowerListReading(instance, context, currentFrame);
-        context->decisions.lastExecutedTask = TbbfMacroTask::TowerList_ReadingItem;
-
+        m_debounceMs = 500; 
         return TickStatus::Yield;
-
+    case TowerListStatus::Ready:
     default:
         return TickStatus::Skipped;
     }

@@ -1,12 +1,13 @@
 #pragma once
-#include <tbbf/behaviors/TbbfMacroBehavior.h>
 #include <tbbf/context/TbbfContext.h>
+#include <tbbf/behaviors/TbbfMacroBehavior.h>
 
 class TbbfMacroInstance;
 
-class GameLoadedBehavior : public TbbfMacroBehavior {
+class DecisionBehavior : public TbbfMacroBehavior {
 protected:
 	TickStatus TickTbbf(TbbfMacroInstance* instance, TbbfContext* context, const FrameView& currentFrame) override;
 public:
-	GameLoadedBehavior() : TbbfMacroBehavior(16) {};
+	DecisionBehavior() : TbbfMacroBehavior(16) {};
 };
+

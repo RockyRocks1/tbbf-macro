@@ -7,6 +7,7 @@ class IMacroInstance;
 enum class TickStatus {
     Skipped,    // Skip this behavior;
     Yield,      // Skip all other behaviors after waiting;
+    Redo,       // Do this exact behavior again immediately on the same frame;
     Terminated, // Terminate the macro instance immediately;
 };
 

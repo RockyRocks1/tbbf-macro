@@ -10,22 +10,26 @@
 #include <tbbf/TbbfMacroManager.h>
 #include <macro/MacroInstanceLaunchInfo.h>
 int main() {
+    SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+    HANDLE hMutex = CreateMutexA(NULL, TRUE, "ROBLOX_singletonEvent");
     winrt::init_apartment();
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
     {
-        HWND roblox = FindWindowA(nullptr, "Roblox");
-        SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
-        HANDLE hMutex = CreateMutexA(NULL, TRUE, "ROBLOX_singletonEvent");
+        HWND roblox = FindWindow(nullptr, "Roblox");
         MacroInstanceLaunchInfo launchInfoAlt = {};
         TbbfMacroManager manager;
-        manager.LaunchMacroInstance(roblox, launchInfoAlt);
+        if (roblox)
+            manager.LaunchMacroInstance(roblox, launchInfoAlt);
+        else
+            manager.LaunchMacroInstance(launchInfoAlt);
         manager.Start();
 
         while (true) {
             if (GetAsyncKeyState(VK_OEM_6) < 0)
             {
-                manager.Stop();
+                if (manager.IsRunning())
+                    manager.Stop();
             }
             Sleep(100);
         }
